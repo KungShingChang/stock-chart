@@ -17,165 +17,129 @@
 
     <div class="info-panel">
         <div class="info-title">📊 0050.TW 歷史 K 線與策略進出場訊號</div>
-        <div class="info-desc">本網頁為純前端靜態版，直接讀取同目錄下的 <code>0050.TW.csv</code> 與 <code>0050_trade_details.csv</code>。</div>
+        <div class="info-desc">本網頁為純前端靜態版，已修正日期的自動對齊防呆機制（支援自動補零與時區格式化）。</div>
     </div>
 
     <div id="chart"></div>
 
     <script>
-        // 1. 初始化 TradingView Lightweight Chart 圖表元件
+        // 💡 日期標準化精準防呆函式：不論是 "2005/12/9" 還是 "2005-12-09" 統一輸出標準 "2005-12-09"
+        function formatDateStandard(rawDate) {
+            if (!rawDate) return null;
+            const d = new Date(rawDate);
+            if (isNaN(d.getTime())) return null; // 排除無效日期
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 1. 初始化 TradingView Chart 圖表
         const chartContainer = document.getElementById('chart');
         const chart = LightweightCharts.createChart(chartContainer, {
             width: chartContainer.clientWidth,
             height: 550,
-            layout: {
-                backgroundColor: '#ffffff',
-                textColor: '#333',
-            },
-            grid: {
-                vertLines: { color: '#f0f3fa' },
-                horzLines: { color: '#f0f3fa' },
-            },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-            },
-            rightPriceScale: {
-                borderColor: '#dfe5eb',
-            },
-            timeScale: {
-                borderColor: '#dfe5eb',
-                timeVisible: false,
-            },
+            layout: { backgroundColor: '#ffffff', textColor: '#333' },
+            grid: { vertLines: { color: '#f0f3fa' }, horzLines: { color: '#f0f3fa' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            rightPriceScale: { borderColor: '#dfe5eb' },
+            timeScale: { borderColor: '#dfe5eb', timeVisible: false },
         });
 
-        // 建立 K 線主圖序列 (紅漲綠跌，符合台灣習慣可自行調整，這裡採經典色調)
         const candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#ef5350',
-            downColor: '#26a69a',
-            borderUpColor: '#ef5350',
-            borderDownColor: '#26a69a',
-            wickUpColor: '#ef5350',
-            wickDownColor: '#26a69a',
+            upColor: '#ef5350', downColor: '#26a69a',
+            borderUpColor: '#ef5350', borderDownColor: '#26a69a',
+            wickUpColor: '#ef5350', wickDownColor: '#26a69a',
         });
 
-        // 建立 成交量副圖序列
         const volumeSeries = chart.addHistogramSeries({
             priceFormat: { type: 'volume' },
-            priceScaleId: '', // 放到副座標軸，不影響主 K 線
-            scaleMargins: {
-                top: 0.8,    // 讓成交量高度只佔圖表下方的 20%
-                bottom: 0,
-            },
+            priceScaleId: '', 
+            scaleMargins: { top: 0.8, bottom: 0 },
         });
 
-        // 用於追蹤所有繪製的進出場虛線，以便後續管理
         let activeTradeLines = [];
 
-        // 🚀 核心：利用 Promise.all 同時讀取兩個歷史 CSV 檔案
+        // 🚀 核心：同時讀取股價檔與交易明細檔
         Promise.all([
-            fetch('0050.TW.csv').then(res => {
-                if (!res.ok) throw new Error('找不到 0050.TW.csv 檔案');
-                return res.text();
-            }),
-            fetch('0050_trade_details.csv').then(res => {
-                if (!res.ok) throw new Error('找不到 0050_trade_details.csv 檔案');
-                return res.text();
-            })
+            fetch('0050.TW.csv').then(res => { if (!res.ok) throw new Error('找不到 0050.TW.csv'); return res.text(); }),
+            fetch('0050_trade_details.csv').then(res => { if (!res.ok) throw new Error('找不到 0050_trade_details.csv'); return res.text(); })
         ])
         .then(([csvKline, csvTrade]) => {
             
-            // 【第一階段：解析 0050.TW.csv 歷史K線】
+            // 【第一階段：解析 0050.TW.csv】
             Papa.parse(csvKline, {
                 header: true,
                 skipEmptyLines: true,
                 complete: function(klineResults) {
                     const klineData = [];
                     const volumeData = [];
+                    const availableDatesSet = new Set(); // 改用 Set 提高查詢效能
                     
                     klineResults.data.forEach(row => {
-                        // 兼容處理欄位大小寫 (Headers 可能為 Date 或 DATE)
                         const rawDate = row.Date || row.DATE;
-                        if (!rawDate) return;
-
-                        // 將 yyyy/mm/dd 或 yyyy-mm-dd 統一格式化為 yyyy-mm-dd
-                        const formattedDate = rawDate.replaceAll('/', '-');
+                        const formattedDate = formatDateStandard(rawDate);
+                        if (!formattedDate) return;
                         
-                        // 欄位名防呆相容
                         const open = parseFloat(row.Open || row.OPEN);
                         const high = parseFloat(row.High || row.HIGH);
                         const low = parseFloat(row.Low || row.LOW);
                         const close = parseFloat(row.Close || row.CLOSE);
                         const volume = parseInt(row.Volume || row.VOLUME, 10) || 0;
 
-                        // 過濾無效壞資料
                         if (!isNaN(open) && !isNaN(high) && !isNaN(low) && !isNaN(close)) {
-                            klineData.push({
-                                time: formattedDate,
-                                open: open,
-                                high: high,
-                                low: low,
-                                close: close
-                            });
-
-                            volumeData.push({
-                                time: formattedDate,
-                                value: volume,
-                                color: close >= open ? 'rgba(239, 83, 80, 0.4)' : 'rgba(38, 166, 154, 0.4)'
-                            });
+                            klineData.push({ time: formattedDate, open: open, high: high, low: low, close: close });
+                            volumeData.push({ time: formattedDate, value: volume, color: close >= open ? 'rgba(239, 83, 80, 0.4)' : 'rgba(38, 166, 154, 0.4)' });
+                            availableDatesSet.add(formattedDate);
                         }
                     });
 
-                    // 排序日期確保連續性正確
                     klineData.sort((a, b) => new Date(a.time) - new Date(b.time));
                     candlestickSeries.setData(klineData);
                     volumeSeries.setData(volumeData);
 
-                    // 記錄所有上架的開盤日期清單，用於防呆驗證
-                    const availableDates = klineData.map(d => d.time);
-
-                    // 【第二階段：解析 0050_trade_details.csv 交易策略明細】
+                    // 【第二階段：解析 0050_trade_details.csv 交易明細】
                     Papa.parse(csvTrade, {
                         header: true,
                         skipEmptyLines: true,
                         complete: function(tradeResults) {
                             const markers = [];
 
-                            // 清除舊的虛線
                             activeTradeLines.forEach(line => chart.removeSeries(line));
                             activeTradeLines = [];
 
                             tradeResults.data.forEach(row => {
-                                const inDate = row.In_Date ? row.In_Date.trim() : '';
-                                const outDate = row.Out_Date ? row.Out_Date.trim() : '';
+                                // 將交易紀錄的日期也進行標準化 ISO 對齊
+                                const inDate = formatDateStandard(row.In_Date);
+                                const outDate = formatDateStandard(row.Out_Date);
                                 const inPrice = parseFloat(row.In_Price);
                                 const outPrice = parseFloat(row.Out_Price);
 
-                                // A. 處理進場點 (Buy 訊號)
-                                if (inDate && !isNaN(inPrice) && availableDates.includes(inDate)) {
+                                // A. 繪製買入箭頭
+                                if (inDate && !isNaN(inPrice) && availableDatesSet.has(inDate)) {
                                     markers.push({
                                         time: inDate,
                                         position: 'belowBar',
-                                        color: '#2196F3', // 藍色買入標記
+                                        color: '#2196F3',
                                         shape: 'arrowUp',
                                         text: `B: ${inPrice}`,
                                     });
                                 }
 
-                                // B. 處理出場點 (Sell 訊號)
-                                const hasValidOutDate = outDate && outDate !== 'null' && outDate !== '';
-                                if (hasValidOutDate && !isNaN(outPrice) && availableDates.includes(outDate)) {
+                                // B. 繪製賣出箭頭與虛線
+                                if (outDate && !isNaN(outPrice) && availableDatesSet.has(outDate)) {
                                     markers.push({
                                         time: outDate,
                                         position: 'aboveBar',
-                                        color: '#ef5350', // 紅色賣出標記
+                                        color: '#ef5350',
                                         shape: 'arrowDown',
                                         text: `S: ${outPrice}`,
                                     });
 
-                                    // C. 當進出場皆成功對齊 K 線時，繪製對角進出場虛線
-                                    if (inDate && availableDates.includes(inDate)) {
+                                    // C. 雙重防呆：確保進出場日期皆存在於 K 線時間軸內，才連虛線
+                                    if (inDate && availableDatesSet.has(inDate)) {
                                         const tradeLine = chart.addLineSeries({
-                                            color: '#90a4ae',
+                                            color: '#78909c',
                                             lineWidth: 1,
                                             lineStyle: LightweightCharts.LineStyle.Dashed,
                                             crosshairMarkerVisible: false,
@@ -192,23 +156,20 @@
                                 }
                             });
 
-                            // 將所有買賣箭頭標記渲染到 K 線上
                             markers.sort((a, b) => new Date(a.time) - new Date(b.time));
                             candlestickSeries.setMarkers(markers);
                         }
                     });
 
-                    // 自動縮放讓圖表填滿合適的視覺範圍
                     chart.timeScale().fitContent();
                 }
             });
         })
         .catch(err => {
             console.error("載入 CSV 失敗：", err);
-            alert("讀取 CSV 檔案失敗，請確認 0050.TW.csv 與 0050_trade_details.csv 是否與 index.html 置於相同路徑下。");
+            alert("讀取 CSV 檔案失敗，請檢查檔案名稱與路徑。");
         });
 
-        // 監聽視窗縮放，保持圖表滿版
         window.addEventListener('resize', () => {
             chart.resize(chartContainer.clientWidth, 550);
         });
