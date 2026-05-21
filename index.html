@@ -209,4 +209,348 @@
         window.onload = initSystem;
     </script>
 </body>
+</html><!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>📊 台股 K 線圖篩選看板 </title>
+    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/" />
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f4f6f9; color: #333; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h2 { margin: 0; }
+        .date-badge { background-color: #34495e; color: #ffffff; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .filter-container { margin-bottom: 20px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .filter-group { display: inline-block; margin-right: 20px; margin-bottom: 10px; }
+        label { font-weight: bold; margin-right: 8px; color: #4f5d73; }
+        select { padding: 8px 12px; border-radius: 4px; border: 1px solid #c8ced3; font-size: 14px; min-width: 180px; background-color: #fff; }
+        #chart { background: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 15px; min-height: 500px; display: flex; align-items: center; justify-content: center; }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-left: 10px; }
+        .status-unclosed { background-color: #ffeeba; color: #856404; }
+        .status-normal { background-color: #d4edda; color: #155724; }
+        .loading { color: #666; font-style: italic; }
+        
+        /* 指標儀表板樣式 */
+        .metrics-container { display: flex; justify-content: space-around; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 20px; text-align: center; }
+        .metric-card { flex: 1; border-right: 1px solid #eef2f7; }
+        .metric-card:last-child { border-right: none; }
+        .metric-title { font-size: 14px; color: #7f8c8d; font-weight: bold; margin-bottom: 8px; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #2c3e50; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h2>📊 台股歷史 K 線看板 <span id="loadStatus" class="loading">(資料載入中...)</span></h2>
+        <div id="dataDate" class="date-badge">數據日期: --</div>
+    </div>
+
+    <div class="filter-container">
+        <div class="filter-group">
+            <label for="securityType">市場/類型：</label>
+            <select id="securityType"><option value="ALL">全部類型</option></select>
+        </div>
+        <div class="filter-group">
+            <label for="industryType">產業類別：</label>
+            <select id="industryType"><option value="ALL">全部產業</option></select>
+        </div>
+        <div class="filter-group">
+            <label for="stockSelect">選擇個股：</label>
+            <select id="stockSelect"><option value="">-- 請選擇股票 --</option></select>
+            <span id="unclosedBadge"></span>
+        </div>
+    </div>
+
+    <div id="chart">
+        <div style="color: #999;">請從上方選單選擇股票以顯示圖表</div>
+    </div>
+
+    <!-- 📊 回測表現指標區 -->
+    <div class="metrics-container">
+        <div class="metric-card">
+            <div class="metric-title">目前模型表現 勝率 (Win Rate)</div>
+            <div id="metric-win-rate" class="metric-value">--</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-title">盈利因子 (Profit Factor)</div>
+            <div id="metric-profit-factor" class="metric-value">--</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-title">淨利/含未實現 (Net Profit)</div>
+            <div id="metric-net-profit" class="metric-value">--</div>
+        </div>
+    </div>
+
+    <script>
+        let stockMasterList = [];       
+        let unclosedPositions = new Set(); 
+        let chart = null, candleSeries = null, activeTradeLines = [];      
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+            if (lines.length === 0) return [];
+            const headers = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim());
+            
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                const currentLine = lines[i].split(',');
+                if (!currentLine || currentLine.length !== headers.length) continue;
+                const obj = {};
+                for (let j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = currentLine[j].replace(/^["']|["']$/g, '').trim();
+                }
+                result.push(obj);
+            }
+            return result;
+        }
+
+        async function initSystem() {
+            try {
+                const unclosedRes = await fetch('TW/list/unclosed_positions.csv').catch(() => null);
+                if (unclosedRes && unclosedRes.ok) {
+                    parseCSV(await unclosedRes.text()).forEach(item => {
+                        if (item.symbol) unclosedPositions.add(item.symbol.trim());
+                    });
+                }
+
+                const response = await fetch('TW/list/stocklist.csv');
+                if (!response.ok) throw new Error("無法讀取 TW/list/stocklist.csv");
+                
+                stockMasterList = parseCSV(await response.text());
+                populateFilters();
+                
+                document.getElementById('loadStatus').innerText = " (已連線本地 CSV 資料源)";
+                document.getElementById('loadStatus').classList.remove('loading');
+
+                document.getElementById('securityType').addEventListener('change', filterStocks);
+                document.getElementById('industryType').addEventListener('change', filterStocks);
+                document.getElementById('stockSelect').addEventListener('change', onStockChanged);
+
+                if (stockMasterList.length > 0) onStockChanged();
+
+            } catch (error) {
+                document.getElementById('chart').innerHTML = `<div style="color:red;font-weight:bold;">⚠️ 系統初始化失敗: ${error.message}</div>`;
+            }
+        }
+
+        function populateFilters() {
+            const secTypes = new Set(), indTypes = new Set();
+            stockMasterList.forEach(stock => {
+                if (stock.security_type) secTypes.add(stock.security_type);
+                if (stock.industry_type) indTypes.add(stock.industry_type);
+            });
+            const secSelect = document.getElementById('securityType');
+            secTypes.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = t; secSelect.appendChild(opt); });
+            const indSelect = document.getElementById('industryType');
+            indTypes.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = t; indSelect.appendChild(opt); });
+            filterStocks();
+        }
+
+        function filterStocks() {
+            const selectedSec = document.getElementById('securityType').value;
+            const selectedInd = document.getElementById('industryType').value;
+            const stockSelect = document.getElementById('stockSelect');
+            const currentSelected = stockSelect.value;
+            stockSelect.innerHTML = '';
+
+            const filtered = stockMasterList.filter(stock => 
+                (selectedSec === 'ALL' || stock.security_type === selectedSec) &&
+                (selectedInd === 'ALL' || stock.industry_type === selectedInd)
+            );
+
+            filtered.forEach(stock => {
+                const opt = document.createElement('option');
+                opt.value = stock.symbol;
+                opt.innerText = `${stock.symbol} ${stock.symbol_name || ''}${unclosedPositions.has(stock.symbol) ? " 📌 (持倉中)" : ""}`;
+                stockSelect.appendChild(opt);
+            });
+
+            if (filtered.some(s => s.symbol === currentSelected)) stockSelect.value = currentSelected;
+            else if (filtered.length > 0) { stockSelect.value = filtered[0].symbol; onStockChanged(); }
+        }
+
+        async function onStockChanged() {
+            const symbol = document.getElementById('stockSelect').value;
+            if (!symbol) return;
+
+            document.getElementById('unclosedBadge').innerHTML = unclosedPositions.has(symbol) ? 
+                `<span class="status-badge status-unclosed">策略持倉中</span>` : `<span class="status-badge status-normal">未持有/已平倉</span>`;
+
+            try {
+                const [tradeRes, indRes] = await Promise.all([
+                    fetch(`TW/trade/${symbol}_trade.csv`).catch(() => null),
+                    fetch(`TW/indicator/${symbol}_indicator.csv`).catch(() => null)
+                ]);
+
+                if (!tradeRes || !tradeRes.ok) {
+                    document.getElementById('chart').innerHTML = `<div style="color:#666;">⚠️ 找不到 [${symbol}] 的回測行情檔案。</div>`;
+                    // 重設指標數據
+                    updateMetrics(null, null, null);
+                    document.getElementById('dataDate').innerText = "數據日期: --";
+                    return;
+                }
+
+                const parsedTrade = parseCSV(await tradeRes.text());
+                const parsedIndicator = indRes && indRes.ok ? parseCSV(await indRes.text()) : [];
+
+                renderChart(parsedTrade, parsedIndicator);
+            } catch (err) {
+                document.getElementById('chart').innerHTML = `<div style="color:red;">錯誤: ${err.message}</div>`;
+            }
+        }
+
+        function renderChart(tradeData, indicatorData) {
+            const chartContainer = document.getElementById('chart');
+            chartContainer.innerHTML = '';
+            activeTradeLines = [];
+
+            chart = LightweightCharts.createChart(chartContainer, {
+                width: chartContainer.clientWidth, height: 500,
+                layout: { background: { color: '#ffffff' }, textColor: '#333333' },
+                grid: { vertLines: { color: '#f0f3fa' }, horzLines: { color: '#f0f3fa' } },
+                timeScale: { borderColor: '#dfdfdf', barSpacing: 10 }
+            });
+
+            candleSeries = chart.addCandlestickSeries({ 
+                upColor: '#ef5350', downColor: '#26a69a', 
+                borderUpColor: '#ef5350', borderDownColor: '#26a69a', 
+                wickUpColor: '#ef5350', wickDownColor: '#26a69a' 
+            });
+
+            const klines = [], priceMap = new Map();
+
+            tradeData.forEach(row => {
+                const t = row.date, o = parseFloat(row.open), h = parseFloat(row.high), l = parseFloat(row.low), c = parseFloat(row.close);
+                if (!t || isNaN(o)) return;
+                klines.push({ time: t, open: o, high: h, low: l, close: c });
+                priceMap.set(t, c);
+            });
+
+            candleSeries.setData(klines);
+
+            // 1. 動態更新右上角「數據日期」(取最後一筆 date)
+            if (klines.length > 0) {
+                const latestDate = klines[klines.length - 1].time;
+                document.getElementById('dataDate').innerText = `數據日期: ${latestDate}`;
+            } else {
+                document.getElementById('dataDate').innerText = "數據日期: --";
+            }
+
+            const markers = [];
+            indicatorData.forEach(trade => {
+                const indate = trade.in_date, outdate = trade.out_date;
+                const inPrice = priceMap.get(indate), outPrice = priceMap.get(outdate);
+                if (!inPrice) return;
+
+                markers.push({ time: indate, position: 'belowBar', color: '#26a69a', shape: 'arrowUp', text: `B: ${inPrice}` });
+                if (outdate && outPrice) {
+                    markers.push({ time: outdate, position: 'aboveBar', color: '#ef5350', shape: 'arrowDown', text: `S: ${outPrice}` });
+                    const line = chart.addLineSeries({ color: '#78909c', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, crosshairMarkerVisible: false, lastValueVisible: false, priceLineVisible: false });
+                    line.setData([{ time: indate, value: inPrice }, { time: outdate, value: outPrice }]);
+                    activeTradeLines.push(line);
+                }
+            });
+
+            markers.sort((a, b) => new Date(a.time) - new Date(b.time));
+            candleSeries.setMarkers(markers);
+            chart.timeScale().fitContent();
+
+            // 2. 利用 indicator 和 trade 計算勝率、盈利因子、淨利 (含未實現)
+            calculatePerformanceMetrics(klines, priceMap, indicatorData);
+        }
+
+        // 📊 指標運算函數 (含未平倉部位損益計算)
+        function calculatePerformanceMetrics(klines, priceMap, indicatorData) {
+            if (klines.length === 0 || indicatorData.length === 0) {
+                updateMetrics("0.00%", "1.00", "0.00");
+                return;
+            }
+
+            // 取目前最新一筆的收盤價作為未平倉部位的計價依據
+            const latestBar = klines[klines.length - 1];
+            const latestClosePrice = latestBar.close;
+
+            let totalTrades = 0;
+            let winTrades = 0;
+            let totalGrossProfit = 0; // 總獲利金
+            let totalGrossLoss = 0;   // 總虧損金
+            let totalNetProfit = 0;   // 總淨利
+
+            indicatorData.forEach(trade => {
+                const inDate = trade.in_date;
+                const outDate = trade.out_date;
+                
+                const inPrice = priceMap.get(inDate);
+                if (!inPrice) return; // 找不到入場價格則略過
+
+                let outPrice = outDate ? priceMap.get(outDate) : null;
+                
+                // 未平倉處理：如果沒有出場日期或對應價格，則採用最新收盤價計算
+                if (!outPrice) {
+                    outPrice = latestClosePrice;
+                }
+
+                const profit = outPrice - inPrice;
+                totalTrades++;
+                totalNetProfit += profit;
+
+                if (profit > 0) {
+                    winTrades++;
+                    totalGrossProfit += profit;
+                } else {
+                    totalGrossLoss += Math.abs(profit); // 虧損取絕對值以利後續除法
+                }
+            });
+
+            // 計算勝率
+            const winRate = totalTrades > 0 ? ((winTrades / totalTrades) * 100).toFixed(2) + '%' : '0.00%';
+
+            // 計算盈利因子 (總獲利 / 總虧損)
+            let profitFactor = "1.00";
+            if (totalGrossLoss > 0) {
+                profitFactor = (totalGrossProfit / totalGrossLoss).toFixed(2);
+            } else if (totalGrossProfit > 0) {
+                profitFactor = "99.9+"; // 若無虧損且有獲利，顯示極大值
+            }
+
+            // 計算總淨利
+            const netProfitStr = totalNetProfit.toFixed(2);
+
+            updateMetrics(winRate, profitFactor, netProfitStr);
+        }
+
+        // 🎨 更新畫面指標
+        function updateMetrics(winRate, profitFactor, netProfit) {
+            const winRateEl = document.getElementById('metric-win-rate');
+            const pfEl = document.getElementById('metric-profit-factor');
+            const netProfitEl = document.getElementById('metric-net-profit');
+
+            if (winRate === null) {
+                winRateEl.innerText = '--';
+                winRateEl.style.color = '#2c3e50';
+                pfEl.innerText = '--';
+                pfEl.style.color = '#2c3e50';
+                netProfitEl.innerText = '--';
+                netProfitEl.style.color = '#2c3e50';
+                return;
+            }
+
+            // 寫入值
+            winRateEl.innerText = winRate;
+            pfEl.innerText = profitFactor;
+            
+            const numNetProfit = parseFloat(netProfit);
+            netProfitEl.innerText = (numNetProfit >= 0 ? '+' : '') + netProfit;
+
+            // 獲利/勝率 > 50% 採用台股紅色 (#ef5350)，虧損採用台股綠色 (#26a69a)
+            const winRateValue = parseFloat(winRate);
+            winRateEl.style.color = winRateValue >= 50 ? '#ef5350' : '#26a69a';
+            pfEl.style.color = parseFloat(profitFactor) >= 1.5 ? '#ef5350' : (parseFloat(profitFactor) < 1.0 ? '#26a69a' : '#2c3e50');
+            netProfitEl.style.color = numNetProfit >= 0 ? '#ef5350' : '#26a69a';
+        }
+
+        window.onload = initSystem;
+    </script>
+</body>
 </html>
