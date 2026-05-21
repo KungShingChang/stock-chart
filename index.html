@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>📊 台股 K 線圖篩選看板 (純淨聚焦版)</title>
+    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/" />
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f4f6f9; color: #333; }
@@ -66,15 +67,17 @@
 
         async function initSystem() {
             try {
-                const unclosedRes = await fetch('list/unclosed_positions.csv').catch(() => null);
+                // 已修正：指向 TW/list/ 子目錄
+                const unclosedRes = await fetch('TW/list/unclosed_positions.csv').catch(() => null);
                 if (unclosedRes && unclosedRes.ok) {
                     parseCSV(await unclosedRes.text()).forEach(item => {
                         if (item.symbol) unclosedPositions.add(item.symbol.trim());
                     });
                 }
 
-                const response = await fetch('list/stocklist.csv');
-                if (!response.ok) throw new Error("無法讀取 list/stocklist.csv");
+                // 已修正：指向 TW/list/ 子目錄
+                const response = await fetch('TW/list/stocklist.csv');
+                if (!response.ok) throw new Error("無法讀取 TW/list/stocklist.csv");
                 
                 stockMasterList = parseCSV(await response.text());
                 populateFilters();
@@ -137,9 +140,10 @@
                 `<span class="status-badge status-unclosed">策略持倉中</span>` : `<span class="status-badge status-normal">未持有/已平倉</span>`;
 
             try {
+                // 已修正：分別指向 TW/trade/ 與 TW/indicator/ 子目錄
                 const [tradeRes, indRes] = await Promise.all([
-                    fetch(`trade/${symbol}_trade.csv`).catch(() => null),
-                    fetch(`indicator/${symbol}_indicator.csv`).catch(() => null)
+                    fetch(`TW/trade/${symbol}_trade.csv`).catch(() => null),
+                    fetch(`TW/indicator/${symbol}_indicator.csv`).catch(() => null)
                 ]);
 
                 if (!tradeRes || !tradeRes.ok) {
