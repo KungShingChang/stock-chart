@@ -18,7 +18,6 @@
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-left: 10px; }
         .status-unclosed { background-color: #ffeeba; color: #856404; }
         .status-normal { background-color: #d4edda; color: #155724; }
-        .loading { color: #666; font-style: italic; }
         
         /* 指標儀表板樣式 */
         .metrics-container { display: flex; justify-content: space-around; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 20px; text-align: center; }
@@ -31,7 +30,7 @@
 <body>
 
     <div class="header-container">
-        <h2>📊 台股歷史 K 線看板 <span id="loadStatus" class="loading">(資料載入中...)</span></h2>
+        <h2>📊 台股歷史 K 線看板</h2>
         <div id="dataDate" class="date-badge">數據日期: --</div>
     </div>
 
@@ -109,9 +108,6 @@
                 stockMasterList = parseCSV(await response.text());
                 populateFilters();
                 
-                document.getElementById('loadStatus').innerText = " (已連線本地 CSV 資料源)";
-                document.getElementById('loadStatus').classList.remove('loading');
-
                 document.getElementById('securityType').addEventListener('change', filterStocks);
                 document.getElementById('industryType').addEventListener('change', filterStocks);
                 document.getElementById('stockSelect').addEventListener('change', onStockChanged);
@@ -174,7 +170,6 @@
 
                 if (!tradeRes || !tradeRes.ok) {
                     document.getElementById('chart').innerHTML = `<div style="color:#666;">⚠️ 找不到 [${symbol}] 的回測行情檔案。</div>`;
-                    // 重設指標數據
                     updateMetrics(null, null, null);
                     document.getElementById('dataDate').innerText = "數據日期: --";
                     return;
@@ -218,7 +213,7 @@
 
             candleSeries.setData(klines);
 
-            // 1. 動態更新右上角「數據日期」(取最後一筆 date)
+            // 更新右上角「數據日期」(取最後一筆 date)
             if (klines.length > 0) {
                 const latestDate = klines[klines.length - 1].time;
                 document.getElementById('dataDate').innerText = `數據日期: ${latestDate}`;
@@ -245,7 +240,7 @@
             candleSeries.setMarkers(markers);
             chart.timeScale().fitContent();
 
-            // 2. 利用 indicator 和 trade 計算勝率、盈利因子、淨利 (含未實現)
+            // 計算勝率、盈利因子、淨利 (含未實現)
             calculatePerformanceMetrics(klines, priceMap, indicatorData);
         }
 
