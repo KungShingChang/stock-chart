@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📌 當前策略持倉看板 - 首頁</title>
+    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/" />
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -48,7 +49,6 @@
             gap: 10px;
         }
 
-        /* 新增：快速前往完整看盤頁按鈕 */
         .header-nav-btn {
             background-color: #ffffff;
             color: var(--primary-accent);
@@ -104,7 +104,7 @@
             border-radius: 12px;
         }
 
-        /* 表格響應式與樣式 */
+        /* 表格樣式 */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -143,7 +143,7 @@
             background-color: #fafbfc;
         }
 
-        /* 標籤與超連結樣式 */
+        /* 連結與標籤樣式 */
         .symbol-link {
             text-decoration: none;
             display: inline-flex;
@@ -174,7 +174,6 @@
             border-color: var(--primary-accent);
         }
 
-        /* 股票名稱欄位樣式 */
         .symbol-name-text {
             font-size: 14px;
             font-weight: 600;
@@ -242,7 +241,6 @@
                 <h1 class="header-title">📌 當前策略持倉明細</h1>
                 <div id="total-summary" class="summary-badge">正在載入持倉與基本資料...</div>
             </div>
-            <!-- 新增：右側快速入口 -->
             <a href="chart.html" class="header-nav-btn">📊 進入完整 K 線圖看板 ➔</a>
         </div>
 
@@ -330,8 +328,8 @@
                     fetch('TW/list/stocklist.csv')
                 ]);
 
-                if (!unclosedRes.ok) throw new Error("讀取 TW/list/unclosed_positions.csv 失敗，請確認檔案路徑。");
-                if (!stocklistRes.ok) throw new Error("讀取 TW/list/stocklist.csv 失敗，請確認檔案路徑。");
+                if (!unclosedRes.ok) throw new Error("讀取 TW/list/unclosed_positions.csv 失敗");
+                if (!stocklistRes.ok) throw new Error("讀取 TW/list/stocklist.csv 失敗");
                 
                 const csvText = await unclosedRes.text();
                 const rawData = parseCSV(csvText);
@@ -339,11 +337,14 @@
                 const stocklistText = await stocklistRes.text();
                 const stocklistData = parseCSV(stocklistText);
 
-                // 建立股票代碼對應名稱的對照表 Map
-                const stockNameMap = new Map();
+                // 建立股票對照表 Map，改為儲存包含 name 與 type 的物件
+                const stockMetaMap = new Map();
                 stocklistData.forEach(item => {
                     if (item.symbol) {
-                        stockNameMap.set(item.symbol.trim(), item.symbol_name ? item.symbol_name.trim() : "");
+                        stockMetaMap.set(item.symbol.trim(), {
+                            name: item.symbol_name ? item.symbol_name.trim() : "",
+                            type: item.security_type ? item.security_type.trim() : ""
+                        });
                     }
                 });
 
@@ -358,13 +359,23 @@
                 const stocksList = [];
                 const etfsList = [];
 
-                // 區分股票(4碼)與 ETF(6碼以上)
+                // 💡 核心改良：優先以 stocklist.csv 的分類為主
                 rawData.forEach(item => {
                     const symbolStr = item.symbol ? item.symbol.trim() : "";
-                    if (symbolStr.length === 4) {
+                    const meta = stockMetaMap.get(symbolStr);
+
+                    if (meta && meta.type === 'ETF') {
+                        etfsList.push(item);
+                    } else if (meta && meta.type === '股票') {
                         stocksList.push(item);
                     } else {
-                        etfsList.push(item);
+                        // 兜底防線：若對照表內找不到這檔，採用智慧代碼判斷
+                        // 在台灣，4碼代碼且非 "00" 開頭（如 2330）是股票；"00" 開頭或長度大於4則是 ETF
+                        if (symbolStr.length === 4 && !symbolStr.startsWith('00')) {
+                            stocksList.push(item);
+                        } else {
+                            etfsList.push(item);
+                        }
                     }
                 });
 
@@ -378,14 +389,14 @@
                 if (stocksList.length > 0) {
                     document.getElementById('stock-section').style.display = 'block';
                     document.getElementById('stock-count').innerText = `${stocksList.length} 檔持倉`;
-                    renderTableRows('stock-table-body', stocksList, stockNameMap);
+                    renderTableRows('stock-table-body', stocksList, stockMetaMap);
                 }
 
                 // 渲染 ETF 部分
                 if (etfsList.length > 0) {
                     document.getElementById('etf-section').style.display = 'block';
                     document.getElementById('etf-count').innerText = `${etfsList.length} 檔持倉`;
-                    renderTableRows('etf-table-body', etfsList, stockNameMap);
+                    renderTableRows('etf-table-body', etfsList, stockMetaMap);
                 }
 
             } catch (err) {
@@ -393,8 +404,8 @@
             }
         }
 
-        // 生成表格內容 (已整合帶有 URL 參數的超連結跳轉)
-        function renderTableRows(tableBodyId, dataList, stockNameMap) {
+        // 生成表格內容
+        function renderTableRows(tableBodyId, dataList, stockMetaMap) {
             const tbody = document.getElementById(tableBodyId);
             tbody.innerHTML = '';
 
@@ -402,8 +413,9 @@
                 const tr = document.createElement('tr');
                 const symbol = item.symbol ? item.symbol.trim() : "";
                 
-                // 自動取得股票名稱，若無對照則留空
-                const symbolName = stockNameMap.get(symbol) || "";
+                // 從 Meta 地圖中抓取名稱
+                const meta = stockMetaMap.get(symbol);
+                const symbolName = meta ? meta.name : "";
                 
                 const entryClose = parseFloat(item.entry_close);
                 const latestClose = parseFloat(item.latest_close);
@@ -421,7 +433,6 @@
                     }
                 }
 
-                // 修改：將代碼與名稱封裝在帶有 ?symbol=xxxx 參數的 <a> 標籤內
                 tr.innerHTML = `
                     <td>
                         <a href="chart.html?symbol=${symbol}" class="symbol-link" title="點擊查看 ${symbol} ${symbolName} 的完整 K 線回測行情">
