@@ -86,7 +86,7 @@
 
     <script>
         let stockMasterList = [];       
-        let unclosedPositions = new Set(); 
+        let unclosedPositionsMap = new Map(); // 升級為 Map 以儲存未平倉詳細欄位 
         let chart = null, candleSeries = null, activeTradeLines = [];      
 
         function parseCSV(text) {
@@ -112,7 +112,9 @@
                 const unclosedRes = await fetch('TW/list/unclosed_positions.csv').catch(() => null);
                 if (unclosedRes && unclosedRes.ok) {
                     parseCSV(await unclosedRes.text()).forEach(item => {
-                        if (item.symbol) unclosedPositions.add(item.symbol.trim());
+                        if (item.symbol) {
+                            unclosedPositionsMap.set(item.symbol.trim(), item);
+                        }
                     });
                 }
 
@@ -161,7 +163,7 @@
             filtered.forEach(stock => {
                 const opt = document.createElement('option');
                 opt.value = stock.symbol;
-                opt.innerText = `${stock.symbol} ${stock.symbol_name || ''}${unclosedPositions.has(stock.symbol) ? " 📌 (持倉中)" : ""}`;
+                opt.innerText = `${stock.symbol} ${stock.symbol_name || ''}${unclosedPositionsMap.has(stock.symbol) ? " 📌 (持倉中)" : ""}`;
                 stockSelect.appendChild(opt);
             });
 
@@ -173,7 +175,7 @@
             const symbol = document.getElementById('stockSelect').value;
             if (!symbol) return;
 
-            document.getElementById('unclosedBadge').innerHTML = unclosedPositions.has(symbol) ? 
+            document.getElementById('unclosedBadge').innerHTML = unclosedPositionsMap.has(symbol) ? 
                 `<span class="status-badge status-unclosed">策略持倉中</span>` : `<span class="status-badge status-normal">未持有/已平倉</span>`;
 
             try {
@@ -217,13 +219,14 @@
                 wickUpColor: '#ef5350', wickDownColor: '#26a69a' 
             });
 
-            const klines = [], priceMap = new Map();
+            const klines = [], priceMap = new Map(), openPriceMap = new Map();
 
             tradeData.forEach(row => {
                 const t = row.date, o = parseFloat(row.open), h = parseFloat(row.high), l = parseFloat(row.low), c = parseFloat(row.close);
                 if (!t || isNaN(o)) return;
                 klines.push({ time: t, open: o, high: h, low: l, close: c });
-                priceMap.set(t, c);
+                priceMap.set(t, c);       // 紀錄收盤價
+                openPriceMap.set(t, o);    // 新增：紀錄開盤價，用於持倉中個股計算成本
             });
 
             candleSeries.setData(klines);
@@ -257,42 +260,54 @@
 
             // 計算勝率、盈利因子、淨利 (含未實現)
             const symbol = document.getElementById('stockSelect').value;
-            calculatePerformanceMetrics(klines, priceMap, indicatorData, symbol);
+            calculatePerformanceMetrics(klines, priceMap, openPriceMap, indicatorData, symbol);
         }
 
-        // 📊 指標運算函數 (含未平倉部位損益計算與詳細資訊顯示)
-        function calculatePerformanceMetrics(klines, priceMap, indicatorData, symbol) {
+        // 📊 指標運算與當前持倉偵測函數 (已整合多級兜底搜尋)
+        function calculatePerformanceMetrics(klines, priceMap, openPriceMap, indicatorData, symbol) {
             const unclosedDetails = document.getElementById('unclosed-details-container');
 
-            if (klines.length === 0 || indicatorData.length === 0) {
+            if (klines.length === 0) {
                 updateMetrics("0.00%", "1.00", "0.00");
                 unclosedDetails.style.display = 'none';
                 return;
             }
 
-            // 取目前最新一筆的收盤價作為未平倉部位的計價依據
+            // 取目前最新一筆的收盤價作為未平倉部位的估值計價依據
             const latestBar = klines[klines.length - 1];
             const latestClosePrice = latestBar.close;
 
             let totalTrades = 0;
             let winTrades = 0;
-            let totalGrossProfit = 0; // 總獲利金
-            let totalGrossLoss = 0;   // 總虧損金
-            let totalNetProfit = 0;   // 總淨利
+            let totalGrossProfit = 0; 
+            let totalGrossLoss = 0;   
+            let totalNetProfit = 0;   
 
             indicatorData.forEach(trade => {
                 const inDate = trade.in_date;
                 const outDate = trade.out_date;
                 
-                const inPrice = priceMap.get(inDate);
-                if (!inPrice) return; // 找不到入場價格則略過
+                let inPrice = NaN;
+                let outPrice = null;
 
-                let outPrice = outDate ? priceMap.get(outDate) : null;
-                
-                // 未平倉處理：如果沒有出場日期或對應價格，則採用最新收盤價計算
-                if (!outPrice) {
+                const outStr = outDate ? String(outDate).trim() : "";
+                const isOutDateEmpty = !outStr || outStr === "None" || outStr === "null" || outStr === "NaN" || outStr === "-";
+
+                if (!isOutDateEmpty) {
+                    // 1. 如果已平倉，維持原本進/出場的收盤價計算損益
+                    const rawInPrice = trade.in_price || trade.price || trade.buy_price || priceMap.get(inDate);
+                    inPrice = parseFloat(rawInPrice);
+                    const rawOutPrice = trade.out_price || trade.sell_price || priceMap.get(outDate);
+                    outPrice = parseFloat(rawOutPrice);
+                } else {
+                    // 2. 如果是持倉中，進場價採用 in_date日期的開盤價，出場價採用最新收盤價
+                    const rawInOpenPrice = openPriceMap.get(inDate) || trade.in_price || trade.price || priceMap.get(inDate);
+                    inPrice = parseFloat(rawInOpenPrice);
                     outPrice = latestClosePrice;
                 }
+
+                if (isNaN(inPrice)) return; 
+                if (outPrice === null || isNaN(outPrice)) return;
 
                 const profit = outPrice - inPrice;
                 totalTrades++;
@@ -302,7 +317,7 @@
                     winTrades++;
                     totalGrossProfit += profit;
                 } else {
-                    totalGrossLoss += Math.abs(profit); // 虧損取絕對值以利後續除法
+                    totalGrossLoss += Math.abs(profit); 
                 }
             });
 
@@ -314,7 +329,7 @@
             if (totalGrossLoss > 0) {
                 profitFactor = (totalGrossProfit / totalGrossLoss).toFixed(2);
             } else if (totalGrossProfit > 0) {
-                profitFactor = "99.9+"; // 若無虧損且有獲利，顯示極大值
+                profitFactor = "99.9+"; 
             }
 
             // 計算總淨利
@@ -323,11 +338,44 @@
             updateMetrics(winRate, profitFactor, netProfitStr);
 
             // 🔍 處理「當前持倉明細」顯示邏輯
-            const unclosedTrade = indicatorData.find(trade => !trade.out_date);
-            if (unclosedTrade && unclosedPositions.has(symbol)) {
-                const inDate = unclosedTrade.in_date;
-                const inPrice = parseFloat(priceMap.get(inDate));
-                if (!isNaN(inPrice)) {
+            const isHeld = unclosedPositionsMap.has(symbol);
+            if (isHeld) {
+                let inDate = null;
+                let inPrice = null;
+
+                // 1. 第一級搜尋：在 indicator 歷史紀錄中尋找出場日無效/空白的未平倉交易
+                const unclosedTrade = indicatorData.find(trade => {
+                    const out = trade.out_date ? String(trade.out_date).trim() : "";
+                    return !out || out === "None" || out === "null" || out === "NaN" || out === "-";
+                });
+
+                if (unclosedTrade) {
+                    inDate = unclosedTrade.in_date;
+                    // 新增：進場價優先讀取該日期的開盤價 (Open Price)
+                    const rawInPrice = openPriceMap.get(inDate) || unclosedTrade.in_price || unclosedTrade.price || priceMap.get(inDate);
+                    inPrice = parseFloat(rawInPrice);
+                }
+
+                // 2. 第二級搜尋：若上面沒找到，直接從 unclosed_positions.csv 的單一 Row 提取資訊
+                const unclosedInfo = unclosedPositionsMap.get(symbol);
+                if ((!inDate || isNaN(inPrice)) && unclosedInfo) {
+                    inDate = unclosedInfo.in_date || unclosedInfo.date || unclosedInfo.entry_date || unclosedInfo.datetime || null;
+                    // 同步套用開盤價邏輯
+                    const rawInPrice = openPriceMap.get(inDate) || unclosedInfo.in_price || unclosedInfo.price || unclosedInfo.cost;
+                    if (rawInPrice) inPrice = parseFloat(rawInPrice);
+                }
+
+                // 3. 第三級搜尋 (兜底)：如果依然解析不到，直接抓 indicatorData 的最後一筆歷史訊號作為進場基礎
+                if ((!inDate || isNaN(inPrice)) && indicatorData.length > 0) {
+                    const lastTrade = indicatorData[indicatorData.length - 1];
+                    inDate = lastTrade.in_date;
+                    const rawInPrice = openPriceMap.get(inDate) || lastTrade.in_price || lastTrade.price || priceMap.get(inDate);
+                    inPrice = parseFloat(rawInPrice);
+                }
+
+                // 4. 計算並渲染
+                if (inDate && !isNaN(inPrice)) {
+                    // 未實現損益 = 最新收盤價 - 持倉起日開盤價
                     const unrealizedPnl = latestClosePrice - inPrice;
                     
                     document.getElementById('unclosed-in-date').innerText = inDate;
@@ -337,7 +385,7 @@
                     pnlEl.innerText = (unrealizedPnl >= 0 ? '+' : '') + unrealizedPnl.toFixed(2);
                     pnlEl.style.color = unrealizedPnl >= 0 ? '#ef5350' : '#26a69a';
                     
-                    unclosedDetails.style.display = 'block';
+                    unclosedDetails.style.display = 'block'; // 顯示持倉明細
                 } else {
                     unclosedDetails.style.display = 'none';
                 }
