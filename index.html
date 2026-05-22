@@ -25,6 +25,12 @@
         .metric-card:last-child { border-right: none; }
         .metric-title { font-size: 14px; color: #7f8c8d; font-weight: bold; margin-bottom: 8px; }
         .metric-value { font-size: 24px; font-weight: bold; color: #2c3e50; }
+
+        /* 📌 持倉詳細資訊區樣式 */
+        .unclosed-details-container { display: none; background: #fff; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 15px; text-align: left; }
+        .unclosed-details-title { font-weight: bold; margin-right: 20px; color: #2c3e50; font-size: 15px; }
+        .unclosed-details-item { margin-right: 25px; font-size: 14px; color: #7f8c8d; font-weight: 500; }
+        .unclosed-details-value { font-weight: bold; color: #2c3e50; margin-left: 4px; }
     </style>
 </head>
 <body>
@@ -68,6 +74,14 @@
             <div class="metric-title">淨利/含未實現 (Net Profit)</div>
             <div id="metric-net-profit" class="metric-value">--</div>
         </div>
+    </div>
+
+    <!-- 📌 持倉詳細資訊區 (預設隱藏，持倉中才顯示) -->
+    <div id="unclosed-details-container" class="unclosed-details-container">
+        <span class="unclosed-details-title">📌 當前持倉明細</span>
+        <span class="unclosed-details-item">持倉起日：<span id="unclosed-in-date" class="unclosed-details-value">--</span></span>
+        <span class="unclosed-details-item">最新收盤價：<span id="unclosed-latest-close" class="unclosed-details-value">--</span></span>
+        <span class="unclosed-details-item">未實現損益：<span id="unclosed-unrealized-pnl" class="unclosed-details-value">--</span></span>
     </div>
 
     <script>
@@ -171,6 +185,7 @@
                 if (!tradeRes || !tradeRes.ok) {
                     document.getElementById('chart').innerHTML = `<div style="color:#666;">⚠️ 找不到 [${symbol}] 的回測行情檔案。</div>`;
                     updateMetrics(null, null, null);
+                    document.getElementById('unclosed-details-container').style.display = 'none';
                     document.getElementById('dataDate').innerText = "數據日期: --";
                     return;
                 }
@@ -241,13 +256,17 @@
             chart.timeScale().fitContent();
 
             // 計算勝率、盈利因子、淨利 (含未實現)
-            calculatePerformanceMetrics(klines, priceMap, indicatorData);
+            const symbol = document.getElementById('stockSelect').value;
+            calculatePerformanceMetrics(klines, priceMap, indicatorData, symbol);
         }
 
-        // 📊 指標運算函數 (含未平倉部位損益計算)
-        function calculatePerformanceMetrics(klines, priceMap, indicatorData) {
+        // 📊 指標運算函數 (含未平倉部位損益計算與詳細資訊顯示)
+        function calculatePerformanceMetrics(klines, priceMap, indicatorData, symbol) {
+            const unclosedDetails = document.getElementById('unclosed-details-container');
+
             if (klines.length === 0 || indicatorData.length === 0) {
                 updateMetrics("0.00%", "1.00", "0.00");
+                unclosedDetails.style.display = 'none';
                 return;
             }
 
@@ -302,6 +321,29 @@
             const netProfitStr = totalNetProfit.toFixed(2);
 
             updateMetrics(winRate, profitFactor, netProfitStr);
+
+            // 🔍 處理「當前持倉明細」顯示邏輯
+            const unclosedTrade = indicatorData.find(trade => !trade.out_date);
+            if (unclosedTrade && unclosedPositions.has(symbol)) {
+                const inDate = unclosedTrade.in_date;
+                const inPrice = parseFloat(priceMap.get(inDate));
+                if (!isNaN(inPrice)) {
+                    const unrealizedPnl = latestClosePrice - inPrice;
+                    
+                    document.getElementById('unclosed-in-date').innerText = inDate;
+                    document.getElementById('unclosed-latest-close').innerText = latestClosePrice.toFixed(2);
+                    
+                    const pnlEl = document.getElementById('unclosed-unrealized-pnl');
+                    pnlEl.innerText = (unrealizedPnl >= 0 ? '+' : '') + unrealizedPnl.toFixed(2);
+                    pnlEl.style.color = unrealizedPnl >= 0 ? '#ef5350' : '#26a69a';
+                    
+                    unclosedDetails.style.display = 'block';
+                } else {
+                    unclosedDetails.style.display = 'none';
+                }
+            } else {
+                unclosedDetails.style.display = 'none';
+            }
         }
 
         // 🎨 更新畫面指標
