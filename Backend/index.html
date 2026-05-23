@@ -180,11 +180,16 @@
             z-index: 15;
             cursor: pointer;
             user-select: none;
+			outline: none;     /* 移除點擊後的藍色框線 */
             transition: background 0.1s;
             text-align: left;
             white-space: nowrap;
         }
-
+		
+		.performance-table th:focus {
+            outline: none;     /* 確保 Tab 聚焦時也沒有藍色框線 */
+        }
+		
         .performance-table th:hover {
             background-color: #e2e8f0;
         }
@@ -572,7 +577,7 @@
         for (let model of filteredSorted) {
             const tr = document.createElement('tr');
             const winRateDisplay = formatWinRate(model.winRateRaw);
-            const profitFactorDisplay = model.profitFactorNum.toFixed(2);
+            const profitFactorDisplay = (parseFloat(model.winRateRaw) >= 100) ? "" : model.profitFactorNum.toFixed(2); // 根據您的需求修改邏輯：勝率為 100% 時，顯示為空字串，否則顯示格式化後的數值
             const netProfitNum = model.netProfitNum;
             const pnlClass = netProfitNum >= 0 ? 'val-positive' : 'val-negative';
             const pnlSign = netProfitNum > 0 ? '+' : '';
