@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 台股模型開發清單看板</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --stock-red: #ef5350;
+            --stock-green: #26a69a;
+            --border-color: #eef2f7;
+            --primary-accent: #34495e;
+            --link-hover: #3498db;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-accent);
+            padding-bottom: 15px;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background-color: #ffffff;
+            color: var(--primary-accent);
+            border: 1px solid var(--primary-accent);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--primary-accent);
+            color: #ffffff;
+        }
+
+        /* 雙窗格佈局 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1.2fr 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0;
+            color: var(--primary-accent);
+        }
+
+        /* 下拉式選單篩選器 */
+        .filter-select {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #c8ced3;
+            font-size: 14px;
+            font-weight: 600;
+            background-color: #fff;
+            color: var(--text-main);
+            outline: none;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        .table-wrapper {
+            overflow-y: auto;
+            max-height: 650px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 13px;
+            padding: 12px 16px;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        tr.active-row td {
+            background-color: #e8f4fd !important;
+        }
+
+        tr:hover td {
+            background-color: #fafbfc;
+        }
+
+        /* 標籤樣式 */
+        .symbol-badge {
+            font-weight: bold;
+            color: var(--text-main);
+            background: #f1f3f5;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            border: 1px solid #dee2e6;
+        }
+
+        .symbol-name {
+            font-weight: 600;
+            color: #4a5568;
+            margin-left: 6px;
+        }
+
+        .timeframe-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            background-color: #ebf5ff;
+            color: #0066cc;
+        }
+
+        /* 績效色彩 */
+        .val-positive {
+            color: var(--stock-red);
+            font-weight: bold;
+        }
+
+        .val-negative {
+            color: var(--stock-green);
+            font-weight: bold;
+        }
+
+        /* 右側報告詳細展示區 */
+        .report-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .report-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .report-meta {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .meta-item {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .meta-label {
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        /* 程式碼風格文本區 */
+        .text-report-viewer {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-y: auto;
+            max-height: 550px;
+            white-space: pre-wrap;
+            border: 1px solid #3c3c3c;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 頂部導航 -->
+        <div class="header-section">
+            <h1 class="header-title">📊 台股模型開發清單</h1>
+            <div class="header-nav">
+                <a href="../index.html" class="nav-btn">🏠 回到持倉首頁</a>
+                <a href="../chart.html" class="nav-btn">📈 進入 K 線圖看板</a>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- 左側/上方：模型列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🚀 開發模型績效清單</h2>
+                    <!-- 下拉式選單篩選器 -->
+                    <select id="typeFilter" class="filter-select">
+                        <option value="ALL">全部模型類型</option>
+                        <option value="股票">僅看股票模型</option>
+                        <option value="ETF">僅看 ETF 模型</option>
+                        <option value="index">僅看 指數 模型</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <div id="listLoading" class="loading-spinner">📊 正在載入開發績效數據...</div>
+                    <table id="performanceTable" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>商品代號與名稱</th>
+                                <th>交易週期</th>
+                                <th>勝率 (Win %)</th>
+                                <th>盈利因子 (PF)</th>
+                                <th>總淨利 (Net Profit)</th>
+                                <th>交易次數</th>
+                            </tr>
+                        </thead>
+                        <tbody id="performanceBody">
+                            <!-- JS 動態插入 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 右側/下方：詳細報告展示區 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📁 模型詳細 analysis 報告</h2>
+                    <span id="activeReportName" style="font-weight: bold; font-size: 14px; color: var(--link-hover);"></span>
+                </div>
+                <div id="reportArea" style="height: 100%; overflow: hidden;">
+                    <div class="report-placeholder">
+                        <span style="font-size: 48px; margin-bottom: 10px;">📄</span>
+                        <span>請點選左側模型清單，以載入並解析對應的完整回測報告</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數定義
+        let stockMetaMap = new Map();
+        let rawPerformanceData = [];
+
+        // CSV 解析引擎 (支援引號包圍與換行)
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+            if (lines.length === 0) return [];
+            const headers = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+            
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                const currentLine = lines[i].split(',');
+                if (!currentLine || currentLine.length < headers.length) continue;
+                const obj = {};
+                for (let j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = currentLine[j].replace(/^["']|["']$/g, '').trim();
+                }
+                result.push(obj);
+            }
+            return result;
+        }
+
+        // 智慧型交易週期代碼轉換器 (Regex 自動解析)
+        function formatTimeframe(tfStr) {
+            if (!tfStr) return '--';
+            let clean = tfStr.toLowerCase().trim();
+            
+            if (clean.includes('day')) {
+                let num = clean.match(/\d+/);
+                return num ? `${num[0]}日 K` : '日 K';
+            }
+            if (clean.includes('week')) {
+                let num = clean.match(/\d+/);
+                if (num) {
+                    return num[0] === '2' ? '雙週 K' : `${num[0]}週 K`;
+                }
+                return '週 K';
+            }
+            if (clean.includes('month')) {
+                let num = clean.match(/\d+/);
+                return num ? `${num[0]}月 K` : '月 K';
+            }
+            return tfStr.toUpperCase();
+        }
+
+        // 系統初始化入口
+        async function initDashboard() {
+            try {
+                // 1. 同步加載最上層的 stocklist.csv
+                const stocklistRes = await fetch('../TW/list/stocklist.csv').catch(() => null);
+                if (stocklistRes && stocklistRes.ok) {
+                    const text = await stocklistRes.text();
+                    parseCSV(text).forEach(item => {
+                        if (item.symbol) {
+                            stockMetaMap.set(item.symbol.trim(), {
+                                name: item.symbol_name ? item.symbol_name.trim() : "",
+                                type: item.security_type ? item.security_type.trim() : ""
+                            });
+                        }
+                    });
+                }
+
+                // 2. 雙路徑嘗試加載 performance.csv (Developerment 與 Developement 兼容)
+                let performanceRes = await fetch('Developerment/Taiwan/performance.csv').catch(() => null);
+                if (!performanceRes || !performanceRes.ok) {
+                    performanceRes = await fetch('Developement/Taiwan/performance.csv').catch(() => null);
+                }
+
+                if (!performanceRes || !performanceRes.ok) {
+                    throw new Error("無法在 Developerment 或 Developement 下找到 performance.csv 資料源");
+                }
+
+                const perfText = await performanceRes.text();
+                rawPerformanceData = parseCSV(perfText);
+
+                // 隱藏 Loading 載入條，顯示表格
+                document.getElementById('listLoading').style.display = 'none';
+                document.getElementById('performanceTable').style.display = 'table';
+
+                // 綁定過濾器事件
+                document.getElementById('typeFilter').addEventListener('change', renderPerformanceList);
+
+                // 渲染初始清單
+                renderPerformanceList();
+
+            } catch (error) {
+                document.getElementById('listLoading').innerHTML = `<span style="color:red;">⚠️ 載入失敗: ${error.message}</span>`;
+            }
+        }
+
+        // 渲染開發模型清單 (包含股票/ETF/指數 智慧型篩選邏輯)
+        function renderPerformanceList() {
+            const filterType = document.getElementById('typeFilter').value;
+            const tbody = document.getElementById('performanceBody');
+            tbody.innerHTML = '';
+
+            // 關聯 stocklist 分類進行過濾
+            const filteredData = rawPerformanceData.filter(item => {
+                const symbol = item.symbol ? item.symbol.trim() : "";
+                const meta = stockMetaMap.get(symbol);
+                const type = meta ? meta.type : "";
+
+                if (filterType === 'ALL') return true;
+                if (filterType === '股票') return type === '股票' || (symbol.length === 4 && !symbol.startsWith('00') && !/^[A-Za-z^]/.test(symbol));
+                if (filterType === 'ETF') return type === 'ETF' || (symbol.length > 4 && symbol.startsWith('00') && !/^[A-Za-z^]/.test(symbol));
+                if (filterType === 'index') return type === '指數' || type === 'Index' || symbol.startsWith('^') || /^[A-Za-z]/.test(symbol);
+                return true;
+            });
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">無符合此類型的模型資料</td></tr>`;
+                return;
+            }
+
+            filteredData.forEach(item => {
+                const tr = document.createElement('tr');
+                const symbol = item.symbol ? item.symbol.trim() : "";
+                const meta = stockMetaMap.get(symbol);
+                const symbolName = meta ? meta.name : "未命名";
+
+                // 欄位匹配容錯 (相容大寫小寫、中文與英文標頭)
+                const winRate = item.win_rate || item['win rate'] || item['勝率'] || '0.0%';
+                const profitFactor = item.profit_factor || item['profit factor'] || item['盈利因子'] || '1.0';
+                const netProfit = item.net_profit || item['net profit'] || item['淨利'] || '0.0';
+                const totalTrades = item.total_trades || item.trades || item['交易次數'] || '0';
+                const timeframe = item.timeframe || item['交易週期'] || '';
+
+                const numNetProfit = parseFloat(netProfit);
+                const pnlClass = numNetProfit >= 0 ? 'val-positive' : 'val-negative';
+                const pnlSign = numNetProfit > 0 ? '+' : '';
+
+                tr.innerHTML = `
+                    <td>
+                        <span class="symbol-badge">${symbol}</span>
+                        <span class="symbol-name">${symbolName}</span>
+                    </td>
+                    <td><span class="timeframe-badge">${formatTimeframe(timeframe)}</span></td>
+                    <td style="font-weight: 600;">${winRate}</td>
+                    <td style="font-weight: 600;">${profitFactor}</td>
+                    <td class="${pnlClass}">${pnlSign}${numNetProfit.toFixed(2)}</td>
+                    <td style="color: var(--text-muted); font-weight: 600;">${totalTrades} 次</td>
+                `;
+
+                // 綁定點擊事件載入對應詳細報告
+                tr.addEventListener('click', () => {
+                    // 移除其他行的選中狀態
+                    document.querySelectorAll('#performanceBody tr').forEach(r => r.classList.remove('active-row'));
+                    tr.classList.add('active-row');
+                    loadDetailReport(symbol, symbolName, formatTimeframe(timeframe));
+                });
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 載入相同路徑下的詳細模型報告 (支援 CSV 轉表格與純文字備用方案)
+        async function loadDetailReport(symbol, name, timeframe) {
+            const reportArea = document.getElementById('reportArea');
+            const activeReportName = document.getElementById('activeReportName');
+            
+            activeReportName.innerText = `🔍 載入中: [${symbol}] ${name} ${timeframe}`;
+            reportArea.innerHTML = `<div class="loading-spinner">📊 正在讀取並解析與組合詳細報告數據...</div>`;
+
+            // 設定嘗試讀取的路徑與副檔名
+            const paths = [
+                `Developerment/Taiwan/${symbol}.csv`,
+                `Developerment/Taiwan/${symbol}.txt`,
+                `Developement/Taiwan/${symbol}.csv`,
+                `Developement/Taiwan/${symbol}.txt`
+            ];
+
+            let response = null;
+            let successPath = '';
+
+            // 輪詢嘗試所有可能的文件類型與拼音路徑
+            for (let path of paths) {
+                try {
+                    const res = await fetch(path);
+                    if (res.ok) {
+                        response = res;
+                        successPath = path;
+                        break;
+                    }
+                } catch (e) {
+                    // 靜默失敗，繼續嘗試下一條路徑
+                }
+            }
+
+            if (!response) {
+                reportArea.innerHTML = `
+                    <div class="report-placeholder" style="color: var(--stock-red);">
+                        <span style="font-size: 48px; margin-bottom: 10px;">❌</span>
+                        <span>無法讀取此模型的詳細報告。<br><small style="color: var(--text-muted);">請確認在 Backend/Developerment/Taiwan/ 下是否存在 ${symbol}.csv 或 ${symbol}.txt</small></span>
+                    </div>
+                `;
+                activeReportName.innerText = `載入失敗: [${symbol}]`;
+                return;
+            }
+
+            const rawText = await response.text();
+            activeReportName.innerText = `📄 [${symbol}] ${name} (${timeframe}) - 來源: ${successPath.split('/').pop()}`;
+
+            // 判斷是否為 CSV 行格式並動態渲染
+            const isCSV = successPath.endsWith('.csv') || (rawText.includes(',') && rawText.split('\n')[0].split(',').length > 2);
+
+            if (isCSV) {
+                renderCsvReport(rawText, reportArea);
+            } else {
+                renderTextReport(rawText, reportArea);
+            }
+        }
+
+        // 渲染 CSV 詳細報告為精美表格
+        function renderCsvReport(text, container) {
+            const parsed = parseCSV(text);
+            if (parsed.length === 0) {
+                container.innerHTML = `<div class="report-placeholder">報告檔案為空，無資料可顯示。</div>`;
+                return;
+            }
+
+            const headers = Object.keys(parsed[0]);
+            
+            let ths = headers.map(h => `<th>${h.toUpperCase()}</th>`).join('');
+            let rows = parsed.map(row => {
+                let tds = headers.map(h => {
+                    let val = row[h] || '';
+                    // 針對損益數值進行智慧著色
+                    if (h.includes('profit') || h.includes('pnl') || h.includes('gain') || h.includes('損益')) {
+                        let num = parseFloat(val);
+                        if (!isNaN(num)) {
+                            let cls = num >= 0 ? 'val-positive' : 'val-negative';
+                            return `<td class="${cls}">${num > 0 ? '+' : ''}${num.toFixed(2)}</td>`;
+                        }
+                    }
+                    return `<td>${val}</td>`;
+                }).join('');
+                return `<tr>${tds}</tr>`;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="report-content">
+                    <div class="table-wrapper" style="max-height: 580px;">
+                        <table>
+                            <thead><tr>${ths}</tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染純文字報告
+        function renderTextReport(text, container) {
+            container.innerHTML = `
+                <div class="report-content">
+                    <pre class="text-report-viewer">${escapeHtml(text)}</pre>
+                </div>
+            `;
+        }
+
+        // HTML 轉義字元安全處理
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 頁面加載完成自動引導
+        window.onload = initDashboard;
+    </script>
+</body>
+</html>
