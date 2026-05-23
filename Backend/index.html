@@ -279,11 +279,11 @@
         </div>
 
         <div class="dashboard-grid">
-            <!-- 左側/上方：模型列表 -->
+            <!-- Left Side: Model Performance List -->
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">🚀 開發模型績效清單</h2>
-                    <!-- 下拉式選單篩選器 -->
+                    <!-- Dropdown Filter -->
                     <select id="typeFilter" class="filter-select">
                         <option value="ALL">全部模型類型</option>
                         <option value="股票">僅看股票模型</option>
@@ -305,13 +305,13 @@
                             </tr>
                         </thead>
                         <tbody id="performanceBody">
-                            <!-- JS 動態插入 -->
+                            <!-- Dynamically populated by JS -->
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- 右側/下方：詳細報告展示區 -->
+            <!-- Right Side: Detailed Analysis Report Panel -->
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">📁 模型詳細 analysis 報告</h2>
@@ -328,19 +328,32 @@
     </div>
 
     <script>
-        // 全域變數定義
+        // Global variables
         let stockMetaMap = new Map();
         let rawPerformanceData = [];
 
-        // CSV 解析引擎 (支援引號包圍與換行)
+        // Comprehensive CSV parser (With UTF-8 BOM auto-clearing and dynamic delimiter detector)
         function parseCSV(text) {
             const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
             if (lines.length === 0) return [];
-            const headers = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+            
+            // 🛡️ Auto-clear UTF-8 BOM (\ufeff)
+            const firstLineClean = lines[0].replace(/^\uFEFF/, "");
+            
+            // 🛡️ Auto-detect delimiter (comma vs semicolon vs tab)
+            const commas = (firstLineClean.match(/,/g) || []).length;
+            const semicolons = (firstLineClean.match(/;/g) || []).length;
+            const tabs = (firstLineClean.match(/\t/g) || []).length;
+            
+            let delimiter = ",";
+            if (semicolons > commas && semicolons > tabs) delimiter = ";";
+            else if (tabs > commas && tabs > semicolons) delimiter = "\t";
+
+            const headers = firstLineClean.split(delimiter).map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
             
             const result = [];
             for (let i = 1; i < lines.length; i++) {
-                const currentLine = lines[i].split(',');
+                const currentLine = lines[i].split(delimiter);
                 if (!currentLine || currentLine.length < headers.length) continue;
                 const obj = {};
                 for (let j = 0; j < headers.length; j++) {
@@ -351,7 +364,49 @@
             return result;
         }
 
-        // 智慧型交易週期代碼轉換器 (Regex 自動解析)
+        // 🔍 Smart Fuzzy Key Matcher as fallback
+        function getFuzzyValue(item, keywords, defaultValue) {
+            const keys = Object.keys(item);
+            for (let key of keys) {
+                const lowerKey = key.toLowerCase().replace(/[\s_%]/g, '');
+                if (keywords.some(keyword => lowerKey.includes(keyword))) {
+                    return item[key];
+                }
+            }
+            return defaultValue;
+        }
+
+        // 🧠 Smart Win Rate percentage formatter
+        function formatWinRate(val) {
+            if (val === undefined || val === null || val === '') return '0.0%';
+            let str = String(val).trim();
+            if (str.endsWith('%')) return str;
+            let num = parseFloat(str);
+            if (!isNaN(num)) {
+                // If output as decimal like 0.584, convert to 58.4%
+                if (num > 0 && num <= 1.0) {
+                    return (num * 100).toFixed(1) + '%';
+                }
+                return num.toFixed(1) + '%';
+            }
+            return str;
+        }
+
+        // 🧠 Smart Profit Factor formatter
+        function formatProfitFactor(val) {
+            if (val === undefined || val === null || val === '') return '1.00';
+            let num = parseFloat(val);
+            return isNaN(num) ? String(val) : num.toFixed(2);
+        }
+
+        // 🧠 Smart Net Profit formatter
+        function formatNetProfit(val) {
+            if (val === undefined || val === null || val === '') return '0.00';
+            let num = parseFloat(val);
+            return isNaN(num) ? String(val) : num.toFixed(2);
+        }
+
+        // Smart Timeframe Format Parser (Regular Expression matching)
         function formatTimeframe(tfStr) {
             if (!tfStr) return '--';
             let clean = tfStr.toLowerCase().trim();
@@ -374,10 +429,10 @@
             return tfStr.toUpperCase();
         }
 
-        // 系統初始化入口
+        // Entry point initializer
         async function initDashboard() {
             try {
-                // 1. 同步加載最上層的 stocklist.csv
+                // 1. Fetch main stock list
                 const stocklistRes = await fetch('../TW/list/stocklist.csv').catch(() => null);
                 if (stocklistRes && stocklistRes.ok) {
                     const text = await stocklistRes.text();
@@ -391,7 +446,7 @@
                     });
                 }
 
-                // 2. 雙路徑嘗試加載 performance.csv (Developerment 與 Developement 兼容)
+                // 2. Fetch performance data with dual-path fallback
                 let performanceRes = await fetch('Developerment/Taiwan/performance.csv').catch(() => null);
                 if (!performanceRes || !performanceRes.ok) {
                     performanceRes = await fetch('Developement/Taiwan/performance.csv').catch(() => null);
@@ -404,14 +459,14 @@
                 const perfText = await performanceRes.text();
                 rawPerformanceData = parseCSV(perfText);
 
-                // 隱藏 Loading 載入條，顯示表格
+                // Hide loading spinner and display table layout
                 document.getElementById('listLoading').style.display = 'none';
                 document.getElementById('performanceTable').style.display = 'table';
 
-                // 綁定過濾器事件
+                // Bind select filter event
                 document.getElementById('typeFilter').addEventListener('change', renderPerformanceList);
 
-                // 渲染初始清單
+                // Initial render pass
                 renderPerformanceList();
 
             } catch (error) {
@@ -419,13 +474,13 @@
             }
         }
 
-        // 渲染開發模型清單 (包含股票/ETF/指數 智慧型篩選邏輯)
+        // Render dashboard performance list
         function renderPerformanceList() {
             const filterType = document.getElementById('typeFilter').value;
             const tbody = document.getElementById('performanceBody');
             tbody.innerHTML = '';
 
-            // 關聯 stocklist 分類進行過濾
+            // Filter logic matching against metadata mapped categories
             const filteredData = rawPerformanceData.filter(item => {
                 const symbol = item.symbol ? item.symbol.trim() : "";
                 const meta = stockMetaMap.get(symbol);
@@ -449,12 +504,18 @@
                 const meta = stockMetaMap.get(symbol);
                 const symbolName = meta ? meta.name : "未命名";
 
-                // 欄位匹配容錯 (相容大寫小寫、中文與英文標頭)
-                const winRate = item.win_rate || item['win rate'] || item['勝率'] || '0.0%';
-                const profitFactor = item.profit_factor || item['profit factor'] || item['盈利因子'] || '1.0';
-                const netProfit = item.net_profit || item['net profit'] || item['淨利'] || '0.0';
-                const totalTrades = item.total_trades || item.trades || item['交易次數'] || '0';
-                const timeframe = item.timeframe || item['交易週期'] || '';
+                // ⚡ 優先直接讀取精準 lowercase 欄位，若無則降級為智慧模糊匹配
+                const rawWinRate = item['winrate'] !== undefined ? item['winrate'] : getFuzzyValue(item, ['winrate', 'winpct', 'win', '勝率'], '0.0%');
+                const rawProfitFactor = item['profitfactor'] !== undefined ? item['profitfactor'] : getFuzzyValue(item, ['profitfactor', 'pf', '營利', '盈利'], '1.0');
+                const rawNetProfit = item['netprofit'] !== undefined ? item['netprofit'] : getFuzzyValue(item, ['netprofit', 'net', '淨利'], '0.0');
+                const rawTotalTrades = item['trades'] !== undefined ? item['trades'] : getFuzzyValue(item, ['trades', 'trade', '次數'], '0');
+                const timeframe = item['timeframe'] !== undefined ? item['timeframe'] : getFuzzyValue(item, ['timeframe', '週期'], '');
+
+                // 🎨 套用智慧格式化，確保顯示極致美觀
+                const winRate = formatWinRate(rawWinRate);
+                const profitFactor = formatProfitFactor(rawProfitFactor);
+                const netProfit = formatNetProfit(rawNetProfit);
+                const totalTrades = parseInt(rawTotalTrades) || 0;
 
                 const numNetProfit = parseFloat(netProfit);
                 const pnlClass = numNetProfit >= 0 ? 'val-positive' : 'val-negative';
@@ -472,9 +533,8 @@
                     <td style="color: var(--text-muted); font-weight: 600;">${totalTrades} 次</td>
                 `;
 
-                // 綁定點擊事件載入對應詳細報告
+                // Single select highlight on row selection and loading report
                 tr.addEventListener('click', () => {
-                    // 移除其他行的選中狀態
                     document.querySelectorAll('#performanceBody tr').forEach(r => r.classList.remove('active-row'));
                     tr.classList.add('active-row');
                     loadDetailReport(symbol, symbolName, formatTimeframe(timeframe));
@@ -484,7 +544,7 @@
             });
         }
 
-        // 載入相同路徑下的詳細模型報告 (支援 CSV 轉表格與純文字備用方案)
+        // Dual-path load backtest analysis report
         async function loadDetailReport(symbol, name, timeframe) {
             const reportArea = document.getElementById('reportArea');
             const activeReportName = document.getElementById('activeReportName');
@@ -492,7 +552,6 @@
             activeReportName.innerText = `🔍 載入中: [${symbol}] ${name} ${timeframe}`;
             reportArea.innerHTML = `<div class="loading-spinner">📊 正在讀取並解析與組合詳細報告數據...</div>`;
 
-            // 設定嘗試讀取的路徑與副檔名
             const paths = [
                 `Developerment/Taiwan/${symbol}.csv`,
                 `Developerment/Taiwan/${symbol}.txt`,
@@ -503,7 +562,6 @@
             let response = null;
             let successPath = '';
 
-            // 輪詢嘗試所有可能的文件類型與拼音路徑
             for (let path of paths) {
                 try {
                     const res = await fetch(path);
@@ -513,7 +571,7 @@
                         break;
                     }
                 } catch (e) {
-                    // 靜默失敗，繼續嘗試下一條路徑
+                    // Fail silently
                 }
             }
 
@@ -531,7 +589,6 @@
             const rawText = await response.text();
             activeReportName.innerText = `📄 [${symbol}] ${name} (${timeframe}) - 來源: ${successPath.split('/').pop()}`;
 
-            // 判斷是否為 CSV 行格式並動態渲染
             const isCSV = successPath.endsWith('.csv') || (rawText.includes(',') && rawText.split('\n')[0].split(',').length > 2);
 
             if (isCSV) {
@@ -541,7 +598,7 @@
             }
         }
 
-        // 渲染 CSV 詳細報告為精美表格
+        // Process CSV parsed data and render clean metrics table
         function renderCsvReport(text, container) {
             const parsed = parseCSV(text);
             if (parsed.length === 0) {
@@ -555,7 +612,6 @@
             let rows = parsed.map(row => {
                 let tds = headers.map(h => {
                     let val = row[h] || '';
-                    // 針對損益數值進行智慧著色
                     if (h.includes('profit') || h.includes('pnl') || h.includes('gain') || h.includes('損益')) {
                         let num = parseFloat(val);
                         if (!isNaN(num)) {
@@ -580,7 +636,7 @@
             `;
         }
 
-        // 渲染純文字報告
+        // Render plain text fallback reports
         function renderTextReport(text, container) {
             container.innerHTML = `
                 <div class="report-content">
@@ -589,7 +645,7 @@
             `;
         }
 
-        // HTML 轉義字元安全處理
+        // Secure character HTML escaping helper
         function escapeHtml(text) {
             return text
                 .replace(/&/g, "&amp;")
@@ -599,7 +655,7 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // 頁面加載完成自動引導
+        // Setup onload hook
         window.onload = initDashboard;
     </script>
 </body>
