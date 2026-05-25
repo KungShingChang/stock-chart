@@ -1,0 +1,15 @@
+列出磁碟區 DATADRIVE1 的資料夾 PATH
+磁碟區序號為 0000002D C288:1C59
+D:.
+├─backend
+│  └─Developerment
+│      ├─Global
+│      └─Taiwan
+├─GLOBAL
+│  ├─indicator
+│  ├─list
+│  └─trade
+└─TW
+    ├─indicator
+    ├─list
+    └─trade
