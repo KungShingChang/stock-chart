@@ -3,456 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📌 當前策略持倉看板 - 首頁</title>
-    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/" />
+    <title>策略持倉管理看板</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
-        :root {
-            --bg-color: #f4f6f9;
-            --card-bg: #ffffff;
-            --text-main: #2c3e50;
-            --text-muted: #7f8c8d;
-            --stock-red: #ef5350;
-            --stock-green: #26a69a;
-            --border-color: #eef2f7;
-            --primary-accent: #34495e;
-            --link-hover: #3498db;
-        }
-
-        body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 30px 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            border-bottom: 2px solid var(--primary-accent);
-            padding-bottom: 15px;
-        }
-
-        .header-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-nav-btn {
-            background-color: #ffffff;
-            color: var(--primary-accent);
-            border: 1px solid var(--primary-accent);
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .header-nav-btn:hover {
-            background-color: var(--primary-accent);
-            color: #ffffff;
-        }
-
-        .summary-badge {
-            background-color: var(--primary-accent);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-left: 15px;
-        }
-
-        /* 區段樣式 (股票 / ETF) */
-        .section-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-
-        .section-header {
-            background-color: #f8f9fa;
-            padding: 16px 24px;
-            font-size: 18px;
-            font-weight: bold;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .section-count {
-            font-size: 13px;
-            color: var(--text-muted);
-            background: #eef2f7;
-            padding: 3px 10px;
-            border-radius: 12px;
-        }
-
-        /* 表格樣式 */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            background-color: #ffffff;
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 13px;
-            padding: 14px 24px;
-            border-bottom: 2px solid var(--border-color);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 14px;
-            font-weight: 500;
-            vertical-align: middle;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover td {
-            background-color: #fafbfc;
-        }
-
-        /* 連結與標籤樣式 */
-        .symbol-link {
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            transition: transform 0.15s ease;
-        }
-
-        .symbol-link:hover {
-            transform: translateY(-1px);
-        }
-
-        .symbol-text {
-            font-weight: bold;
-            color: var(--text-main);
-            background: #f1f3f5;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 13px;
-            border: 1px solid #dee2e6;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .symbol-link:hover .symbol-text {
-            background-color: var(--primary-accent);
-            color: #ffffff;
-            border-color: var(--primary-accent);
-        }
-
-        .symbol-name-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: #4a5568;
-            margin-left: 8px;
-            transition: color 0.2s ease;
-        }
-
-        .symbol-link:hover .symbol-name-text {
-            color: var(--link-hover);
-        }
-
-        .timeframe-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            background-color: #ebf5ff;
-            color: #0066cc;
-        }
-
-        /* 損益色彩管理 */
-        .pnl-positive {
-            color: var(--stock-red);
-            font-weight: bold;
-            background-color: #fff5f5;
-            padding: 4px 10px;
-            border-radius: 6px;
-            display: inline-block;
-        }
-
-        .pnl-negative {
-            color: var(--stock-green);
-            font-weight: bold;
-            background-color: #eefbf9;
-            padding: 4px 10px;
-            border-radius: 6px;
-            display: inline-block;
-        }
-
-        .pnl-neutral {
-            color: var(--text-main);
-            font-weight: bold;
-            background-color: #f8f9fa;
-            padding: 4px 10px;
-            border-radius: 6px;
-            display: inline-block;
-        }
-
-        .loading-status {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-            font-size: 16px;
+        :root { --sidebar-width: 260px; --header-height: 60px; }
+        body { background-color: #f8f9fa; overflow: hidden; }
+        #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: #ffffff; border-right: 1px solid #e9ecef; z-index: 1000; transition: all 0.3s; }
+        #sidebar.active { margin-left: calc(-1 * var(--sidebar-width)); }
+        #main-content { margin-left: var(--sidebar-width); height: 100vh; display: flex; flex-direction: column; transition: all 0.3s; }
+        #main-content.active { margin-left: 0; }
+        /* Iframe 填滿剩餘空間 */
+        #content-frame { width: 100%; height: calc(100vh - var(--header-height)); border: none; }
+        .nav-link { color: #4a5568; font-weight: 500; cursor: pointer; }
+        .nav-link:hover, .nav-link.active { color: #0d6efd; background: #eef2ff; }
+        @media (max-width: 992px) {
+            #sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
+            #sidebar.show { margin-left: 0; }
+            #main-content { margin-left: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- 頂部標題與工具列 -->
-        <div class="header-section">
-            <div style="display: flex; align-items: center;">
-                <h1 class="header-title">📌 當前策略持倉明細</h1>
-                <div id="total-summary" class="summary-badge">正在載入持倉與基本資料...</div>
-            </div>
-            <a href="chart.html" class="header-nav-btn">📊 進入完整 K 線圖看板 ➔</a>
-        </div>
+<nav id="sidebar" class="d-flex flex-column p-3">
+    <div class="h3 text-primary mb-4 px-2">🚀 策略看板</div>
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a class="nav-link active" onclick="loadPage('taiwan.html', this)">
+                <i class="ti ti-chart-line me-2"></i>台股策略持倉
+            </a>
+        </li>
+        <li>
+            <a class="nav-link" onclick="loadPage('global.html', this)">
+                <i class="ti ti-world me-2"></i>全球商品策略
+            </a>
+        </li>
+    </ul>
+</nav>
 
-        <!-- 股票區段 -->
-        <div class="section-container" id="stock-section" style="display: none;">
-            <div class="section-header">
-                <span>📈 台灣上市櫃股票交易部位 (點選名稱看 K 線)</span>
-                <span class="section-count" id="stock-count">0 檔持倉</span>
-            </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>股票名稱 (點擊查看圖表)</th>
-                            <th>交易週期</th>
-                            <th>持倉起日</th>
-                            <th>進場成本價</th>
-                            <th>最新觀測日</th>
-                            <th>最新收盤價</th>
-                            <th>未實現損益 (每股)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stock-table-body">
-                        <!-- 動態插入數據 -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<main id="main-content">
+    <header class="navbar navbar-light bg-white border-bottom px-4" style="height: var(--header-height);">
+        <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
+            <i class="ti ti-menu-2"></i>
+        </button>
+        <div class="fw-bold ms-3" id="page-title">台股策略持倉看板</div>
+    </header>
 
-        <!-- ETF 區段 -->
-        <div class="section-container" id="etf-section" style="display: none;">
-            <div class="section-header">
-                <span>📊 指數型基金 (ETF) 持倉部位 (點選名稱看 K 線)</span>
-                <span class="section-count" id="etf-count">0 檔持倉</span>
-            </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ETF 名稱 (點擊查看圖表)</th>
-                            <th>交易週期</th>
-                            <th>持倉起日</th>
-                            <th>進場成本價</th>
-                            <th>最新觀測日</th>
-                            <th>最新收盤價</th>
-                            <th>未實現損益 (每股)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="etf-table-body">
-                        <!-- 動態插入數據 -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <!-- 顯示目標頁面的容器 -->
+    <iframe id="content-frame" src="taiwan.html"></iframe>
+</main>
 
-        <div id="loading-div" class="loading-status">📊 正在讀取並解析 unclosed_positions.csv 與 stocklist.csv...</div>
-    </div>
+<script>
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('main-content').classList.toggle('active');
+    }
 
-    <script>
-        // CSV 解析器
-        function parseCSV(text) {
-            const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-            if (lines.length === 0) return [];
-            const headers = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim());
-            
-            const result = [];
-            for (let i = 1; i < lines.length; i++) {
-                const currentLine = lines[i].split(',');
-                if (!currentLine || currentLine.length !== headers.length) continue;
-                const obj = {};
-                for (let j = 0; j < headers.length; j++) {
-                    obj[headers[j]] = currentLine[j].replace(/^["']|["']$/g, '').trim();
-                }
-                result.push(obj);
-            }
-            return result;
-        }
+    function loadPage(url, element) {
+        // 更新 iframe 內容
+        document.getElementById('content-frame').src = url;
+        
+        // 更新標題
+        document.getElementById('page-title').innerText = element.innerText.trim() + '看板';
 
-        // 初始化並渲染網頁
-        async function loadPositions() {
-            try {
-                // 同時平行讀取持倉明細與股票基本資料 ( stocklist.csv )
-                const [unclosedRes, stocklistRes] = await Promise.all([
-                    fetch('TW/list/unclosed_positions.csv'),
-                    fetch('TW/list/stocklist.csv')
-                ]);
-
-                if (!unclosedRes.ok) throw new Error("讀取 TW/list/unclosed_positions.csv 失敗");
-                if (!stocklistRes.ok) throw new Error("讀取 TW/list/stocklist.csv 失敗");
-                
-                const csvText = await unclosedRes.text();
-                const rawData = parseCSV(csvText);
-
-                const stocklistText = await stocklistRes.text();
-                const stocklistData = parseCSV(stocklistText);
-
-                // 建立股票對照表 Map，改為儲存包含 name 與 type 的物件
-                const stockMetaMap = new Map();
-                stocklistData.forEach(item => {
-                    if (item.symbol) {
-                        stockMetaMap.set(item.symbol.trim(), {
-                            name: item.symbol_name ? item.symbol_name.trim() : "",
-                            type: item.security_type ? item.security_type.trim() : ""
-                        });
-                    }
-                });
-
-                if (rawData.length === 0) {
-                    document.getElementById('loading-div').innerText = "系統查無任何持倉部位數據。";
-                    return;
-                }
-
-                // 依照持倉起日由近到遠排序 (由新到舊)
-                rawData.sort((a, b) => new Date(b.in_date) - new Date(a.in_date));
-
-                const stocksList = [];
-                const etfsList = [];
-
-                // 💡 核心改良：優先以 stocklist.csv 的分類為主
-                rawData.forEach(item => {
-                    const symbolStr = item.symbol ? item.symbol.trim() : "";
-                    const meta = stockMetaMap.get(symbolStr);
-
-                    if (meta && meta.type === 'ETF') {
-                        etfsList.push(item);
-                    } else if (meta && meta.type === '股票') {
-                        stocksList.push(item);
-                    } else {
-                        // 兜底防線：若對照表內找不到這檔，採用智慧代碼判斷
-                        // 在台灣，4碼代碼且非 "00" 開頭（如 2330）是股票；"00" 開頭或長度大於4則是 ETF
-                        if (symbolStr.length === 4 && !symbolStr.startsWith('00')) {
-                            stocksList.push(item);
-                        } else {
-                            etfsList.push(item);
-                        }
-                    }
-                });
-
-                // 隱藏載入提示
-                document.getElementById('loading-div').style.display = 'none';
-
-                // 渲染頂部總覽
-                document.getElementById('total-summary').innerText = `目前總計持倉: ${rawData.length} 檔`;
-
-                // 渲染股票部分
-                if (stocksList.length > 0) {
-                    document.getElementById('stock-section').style.display = 'block';
-                    document.getElementById('stock-count').innerText = `${stocksList.length} 檔持倉`;
-                    renderTableRows('stock-table-body', stocksList, stockMetaMap);
-                }
-
-                // 渲染 ETF 部分
-                if (etfsList.length > 0) {
-                    document.getElementById('etf-section').style.display = 'block';
-                    document.getElementById('etf-count').innerText = `${etfsList.length} 檔持倉`;
-                    renderTableRows('etf-table-body', etfsList, stockMetaMap);
-                }
-
-            } catch (err) {
-                document.getElementById('loading-div').innerHTML = `<span style="color: red; font-weight: bold;">⚠️ 載入錯誤: ${err.message}</span>`;
-            }
-        }
-
-        // 生成表格內容
-        function renderTableRows(tableBodyId, dataList, stockMetaMap) {
-            const tbody = document.getElementById(tableBodyId);
-            tbody.innerHTML = '';
-
-            dataList.forEach(item => {
-                const tr = document.createElement('tr');
-                const symbol = item.symbol ? item.symbol.trim() : "";
-                
-                // 從 Meta 地圖中抓取名稱
-                const meta = stockMetaMap.get(symbol);
-                const symbolName = meta ? meta.name : "";
-                
-                const entryClose = parseFloat(item.entry_close);
-                const latestClose = parseFloat(item.latest_close);
-                const pnl = latestClose - entryClose;
-                
-                // 判斷未實現損益的樣式標籤
-                let pnlClass = 'pnl-neutral';
-                let pnlSign = '';
-                if (!isNaN(pnl)) {
-                    if (pnl > 0) {
-                        pnlClass = 'pnl-positive';
-                        pnlSign = '+';
-                    } else if (pnl < 0) {
-                        pnlClass = 'pnl-negative';
-                    }
-                }
-
-                tr.innerHTML = `
-                    <td>
-                        <a href="chart.html?symbol=${symbol}" class="symbol-link" title="點擊查看 ${symbol} ${symbolName} 的完整 K 線回測行情">
-                            <span class="symbol-text">${symbol}</span>
-                            <span class="symbol-name-text">${symbolName}</span>
-                        </a>
-                    </td>
-                    <td><span class="timeframe-badge">${item.timeframe}</span></td>
-                    <td style="font-weight: 600; color: #2c3e50;">${item.in_date}</td>
-                    <td>$${entryClose.toFixed(2)}</td>
-                    <td style="color: var(--text-muted);">${item.latest_date}</td>
-                    <td style="font-weight: 600;">$${latestClose.toFixed(2)}</td>
-                    <td><span class="${pnlClass}">${pnlSign}${isNaN(pnl) ? '--' : pnl.toFixed(2)}</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // 網頁加載完成後自動運行
-        window.onload = loadPositions;
-    </script>
+        // 更新 Active 樣式
+        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
+</script>
 </body>
 </html>
