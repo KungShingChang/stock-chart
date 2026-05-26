@@ -3,8 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📌 全球商品策略持倉看板</title>
-	<link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/global.html" />
+    <title>📌 全球商品策略持倉看板 - 排序版</title>
+    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/global.html" />
+    <!-- 引用 Bootstrap5 + jQuery + Tablesorter (與台股版本一致，提供完整排序UI) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/css/theme.bootstrap_4.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
+    <!-- 額外加載 widgets 增強穩定性 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/extras/jquery.tablesorter.widgets.min.js"></script>
+    
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -18,36 +26,266 @@
             --link-hover: #3498db;
         }
 
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 30px 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid var(--primary-accent); padding-bottom: 15px; }
-        .header-title { font-size: 24px; font-weight: bold; margin: 0; }
-        .header-nav-btn { background-color: #ffffff; color: var(--primary-accent); border: 1px solid var(--primary-accent); padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: bold; text-decoration: none; }
-        .header-nav-btn:hover { background-color: var(--primary-accent); color: #ffffff; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 30px 20px;
+        }
         
-        .section-container { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 30px; }
-        .section-header { background-color: #f8f9fa; padding: 16px 24px; font-weight: bold; border-bottom: 1px solid var(--border-color); }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
         
-        table { width: 100%; border-collapse: collapse; }
-        th { color: var(--text-muted); font-size: 13px; padding: 14px 24px; border-bottom: 2px solid var(--border-color); text-align: left; }
-        td { padding: 16px 24px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--primary-accent);
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
         
-        .symbol-text { background: #f1f3f5; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; }
-        .pnl-positive { color: var(--stock-red); font-weight: bold; }
-        .pnl-negative { color: var(--stock-green); font-weight: bold; }
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header-nav-btn {
+            background-color: #ffffff;
+            color: var(--primary-accent);
+            border: 1px solid var(--primary-accent);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .header-nav-btn:hover {
+            background-color: var(--primary-accent);
+            color: #ffffff;
+        }
+        
+        .summary-badge {
+            background-color: var(--primary-accent);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 15px;
+        }
+        
+        .section-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background-color: #f8f9fa;
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-count {
+            font-size: 13px;
+            color: var(--text-muted);
+            background: #eef2f7;
+            padding: 3px 10px;
+            border-radius: 12px;
+        }
+        
+        /* 表格樣式 (加強與tablesorter整合) */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #ffffff;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 13px;
+            padding: 14px 24px;
+            border-bottom: 2px solid var(--border-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        /* tablesorter 排序圖標美化 (與台股版本一致) */
+        th.tablesorter-header {
+            background-image: none;
+            padding-right: 24px;
+        }
+        
+        th.tablesorter-header.tablesorter-headerAsc,
+        th.tablesorter-header.tablesorter-headerDesc {
+            background-color: #f2f5f8;
+        }
+        
+        th.tablesorter-header.tablesorter-headerAsc:after {
+            content: " ▲";
+            font-size: 10px;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-accent);
+        }
+        
+        th.tablesorter-header.tablesorter-headerDesc:after {
+            content: " ▼";
+            font-size: 10px;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-accent);
+        }
+        
+        td {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover td {
+            background-color: #fafbfc;
+        }
+        
+        /* 商品代碼樣式 (保留原風格並增強) */
+        .symbol-link {
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: transform 0.15s ease;
+        }
+        
+        .symbol-link:hover {
+            transform: translateY(-1px);
+        }
+        
+        .symbol-text {
+            font-weight: bold;
+            color: var(--text-main);
+            background: #f1f3f5;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            border: 1px solid #dee2e6;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .symbol-link:hover .symbol-text {
+            background-color: var(--primary-accent);
+            color: #ffffff;
+            border-color: var(--primary-accent);
+        }
+        
+        .timeframe-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            background-color: #ebf5ff;
+            color: #0066cc;
+        }
+        
+        /* 損益色彩管理 */
+        .pnl-positive {
+            color: var(--stock-red);
+            font-weight: bold;
+            background-color: #fff5f5;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        .pnl-negative {
+            color: var(--stock-green);
+            font-weight: bold;
+            background-color: #eefbf9;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        .pnl-neutral {
+            color: var(--text-main);
+            font-weight: bold;
+            background-color: #f8f9fa;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        
+        .loading-status {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        
+        /* 確保表格排序按鈕在響應式下也正常 */
+        .tablesorter-bootstrap .tablesorter-header-inner {
+            padding-right: 0;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header-section">
+<div class="container">
+    <div class="header-section">
+        <div style="display: flex; align-items: center; gap: 10px;">
             <h1 class="header-title">📌 全球商品策略持倉明細</h1>
-            <a href="global_chart.html" class="header-nav-btn">📊 進入完整 K 線圖看板 ➔</a>
+            <div id="total-summary" class="summary-badge">載入中...</div>
         </div>
+        <a href="global_chart.html" class="header-nav-btn">📊 進入完整 K 線圖看板 ➔</a>
+    </div>
 
-        <div class="section-container">
-            <div class="section-header">📈 大宗商品交易部位</div>
-            <table>
+    <div class="section-container">
+        <div class="section-header">
+            <span>📈 大宗商品交易部位 (點擊代碼看K線圖)</span>
+            <span class="section-count" id="commodity-count">0 檔持倉</span>
+        </div>
+        <div class="table-responsive">
+            <!-- 賦予表格ID，供tablesorter初始化與排序使用 -->
+            <table id="commodity-table" class="tablesorter-bootstrap tablesorter">
                 <thead>
                     <tr>
                         <th>商品代碼</th>
@@ -58,49 +296,181 @@
                         <th>損益</th>
                     </tr>
                 </thead>
-                <tbody id="data-body"></tbody>
+                <tbody id="data-body">
+                    <!-- 動態插入數據 -->
+                </tbody>
             </table>
         </div>
     </div>
+    
+    <div id="loading-div" class="loading-status">📊 正在讀取 GLOBAL/list/unclosed_positions.csv ...</div>
+</div>
 
-    <script>
-        function parseCSV(text) {
-            const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-            const headers = lines[0].split(',');
-            return lines.slice(1).map(line => {
-                const values = line.split(',');
-                return headers.reduce((obj, h, i) => { obj[h.trim()] = values[i].trim(); return obj; }, {});
-            });
-        }
-
-        async function loadPositions() {
-            try {
-                // 修改路徑為 GLOBAL/
-                const res = await fetch('GLOBAL/list/unclosed_positions.csv');
-                const csvText = await res.text();
-                const data = parseCSV(csvText);
-
-                const tbody = document.getElementById('data-body');
-                data.forEach(item => {
-                    const pnl = parseFloat(item.latest_close) - parseFloat(item.entry_close);
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><a href="global_chart.html?symbol=${item.symbol}" style="text-decoration:none; color:inherit;">
-                            <span class="symbol-text">${item.symbol}</span>
-                        </a></td>
-                        <td>${item.timeframe}</td>
-                        <td>${item.in_date}</td>
-                        <td>${item.entry_close}</td>
-                        <td>${item.latest_close}</td>
-                        <td class="${pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}">${pnl.toFixed(2)}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (err) {
-                console.error("載入失敗:", err);
+<script>
+    // 增強 CSV 解析器 (保留原本邏輯但更穩健，過濾空行)
+    function parseCSV(text) {
+        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+        if (lines.length === 0) return [];
+        const headers = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim());
+        const result = [];
+        for (let i = 1; i < lines.length; i++) {
+            const currentLine = lines[i].split(',');
+            if (!currentLine || currentLine.length !== headers.length) continue;
+            const obj = {};
+            for (let j = 0; j < headers.length; j++) {
+                obj[headers[j]] = currentLine[j].replace(/^["']|["']$/g, '').trim();
             }
+            result.push(obj);
         }
-        window.onload = loadPositions;
-    </script>
+        return result;
+    }
+    
+    // 簡易防XSS輔助
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // 渲染表格 + 初始化/更新 tablesorter 排序功能 (完全保留原有功能)
+    async function loadPositions() {
+        const loadingDiv = document.getElementById('loading-div');
+        const tbody = document.getElementById('data-body');
+        const commodityCountSpan = document.getElementById('commodity-count');
+        const totalSummarySpan = document.getElementById('total-summary');
+        
+        try {
+            // 原始路徑保持不變: 'GLOBAL/list/unclosed_positions.csv'
+            const res = await fetch('GLOBAL/list/unclosed_positions.csv');
+            if (!res.ok) throw new Error(`HTTP ${res.status}: 無法讀取 GLOBAL/list/unclosed_positions.csv`);
+            
+            const csvText = await res.text();
+            const data = parseCSV(csvText);
+            
+            if (!data || data.length === 0) {
+                loadingDiv.innerHTML = '<span style="color: #e67e22;">⚠️ 無任何持倉部位數據。</span>';
+                totalSummarySpan.innerText = '0 檔持倉';
+                commodityCountSpan.innerText = '0 檔持倉';
+                return;
+            }
+            
+            // 依照原始順序處理：保留原本預設排序 (按進場日期由近到遠，與原先無排序時視覺一致)
+            // 但加入表格排序後使用者可自由排序，這行保留業務原始順序(新到舊)供初始載入
+            data.sort((a, b) => new Date(b.in_date) - new Date(a.in_date));
+            
+            // 清空 tbody
+            tbody.innerHTML = '';
+            
+            // 遍歷資料並生成每一列 (完整保留原有連結、損益格式並優化顯示)
+            data.forEach(item => {
+                const symbolRaw = item.symbol ? item.symbol.trim() : "";
+                const timeframe = item.timeframe || "";
+                const inDate = item.in_date || "";
+                const entryCloseRaw = item.entry_close;
+                const latestCloseRaw = item.latest_close;
+                
+                const entryClose = parseFloat(entryCloseRaw);
+                const latestClose = parseFloat(latestCloseRaw);
+                let pnl = 0;
+                let isValidNumber = false;
+                if (!isNaN(entryClose) && !isNaN(latestClose)) {
+                    pnl = latestClose - entryClose;
+                    isValidNumber = true;
+                }
+                
+                // 損益樣式處理 (延續原始表現但更加精緻)
+                let pnlClass = 'pnl-neutral';
+                let pnlSign = '';
+                let pnlDisplay = '--';
+                if (isValidNumber) {
+                    if (pnl > 0) {
+                        pnlClass = 'pnl-positive';
+                        pnlSign = '+';
+                        pnlDisplay = `${pnlSign}${pnl.toFixed(2)}`;
+                    } else if (pnl < 0) {
+                        pnlClass = 'pnl-negative';
+                        pnlDisplay = `${pnl.toFixed(2)}`;
+                    } else {
+                        pnlDisplay = `0.00`;
+                        pnlClass = 'pnl-neutral';
+                    }
+                }
+                
+                // 顯示成本價與最新價格，保留兩位小數(若為數字)
+                const entryDisplay = isValidNumber ? `$${entryClose.toFixed(2)}` : escapeHtml(entryCloseRaw);
+                const latestDisplay = isValidNumber ? `$${latestClose.toFixed(2)}` : escapeHtml(latestCloseRaw);
+                
+                const tr = document.createElement('tr');
+                // 保留原有連結功能，且點擊商品代碼可跳轉至 global_chart.html 並帶參數
+                tr.innerHTML = `
+                    <td>
+                        <a href="global_chart.html?symbol=${encodeURIComponent(symbolRaw)}" class="symbol-link" title="點擊查看 ${symbolRaw} 完整K線圖">
+                            <span class="symbol-text">${escapeHtml(symbolRaw)}</span>
+                        </a>
+                    </td>
+                    <td><span class="timeframe-badge">${escapeHtml(timeframe)}</span></td>
+                    <td style="font-weight: 600;">${escapeHtml(inDate)}</td>
+                    <td>${escapeHtml(entryDisplay)}</td>
+                    <td>${escapeHtml(latestDisplay)}</td>
+                    <td><span class="${pnlClass}">${escapeHtml(pnlDisplay)}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // 更新計數與摘要
+            const totalCount = data.length;
+            totalSummarySpan.innerText = `${totalCount} 檔持倉`;
+            commodityCountSpan.innerText = `${totalCount} 檔持倉`;
+            loadingDiv.style.display = 'none';
+            
+            // ---------- 核心排序功能: 初始化或更新 tablesorter ----------
+            const $table = $('#commodity-table');
+            if ($.fn.tablesorter) {
+                // 檢查是否已經初始化 tablesorter
+                if ($table.data('tablesorter')) {
+                    // 若已初始化過，觸發更新資料並重繪排序widgets (完全符合題目要求)
+                    $table.trigger("update");
+                    $table.trigger("applyWidgets");
+                    // 保留當前排序狀態，無需重設 sortList; 但如果希望預設持倉日期新到舊，可以保留原樣
+                    // 因為用戶可能已經點過排序，update 不會重置排序，體驗更好
+                } else {
+                    // 初始化 tablesorter 並提供適合商品數據的解析器
+                    $table.tablesorter({
+                        theme: 'bootstrap_4',
+                        headerTemplate: '{content}',
+                        widgets: ['zebra', 'columns'],
+                        // 預設按照進場日期降序 (新到舊)，與視覺初始排序一致
+                        sortList: [[2, 1]],   // 索引2 => 進場日期, 1表示降序
+                        headers: {
+                            0: { sorter: 'text' },      // 商品代碼 (文字)
+                            1: { sorter: 'text' },      // 交易週期 (文字)
+                            2: { sorter: 'date' },      // 進場日期 (支援 YYYY-MM-DD)
+                            3: { sorter: 'digit' },     // 成本價 (數字)
+                            4: { sorter: 'digit' },     // 最新價格 (數字)
+                            5: { sorter: 'digit' }      // 損益 (數字，含正負)
+                        }
+                    });
+                }
+            } else {
+                console.warn("jQuery tablesorter 未成功載入，排序功能不可用");
+            }
+            
+        } catch (err) {
+            console.error("載入持倉失敗:", err);
+            loadingDiv.innerHTML = `<span style="color: red; font-weight: bold;">⚠️ 載入錯誤: ${err.message}</span>`;
+            totalSummarySpan.innerText = '載入失敗';
+            commodityCountSpan.innerText = '錯誤';
+        }
+    }
+    
+    // 確保頁面載入完成後執行，並保留所有原有功能
+    window.onload = function() {
+        loadPositions();
+    };
+</script>
 </body>
 </html>
