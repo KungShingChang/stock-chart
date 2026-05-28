@@ -3,21 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> 台股策略持倉看板</title>
+    <title>台股策略持倉看板 - 分頁化版本</title>
     <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/taiwan.html" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/css/theme.bootstrap_4.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/extras/jquery.tablesorter.widgets.min.js"></script>
+    <!-- Bootstrap JS bundle for tabs -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <style>
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            padding: 30px 20px;
-        }
         :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
@@ -26,12 +22,28 @@
             --stock-red: #ef5350;
             --stock-green: #26a69a;
             --border-color: #e2e8f0;
+            --primary-accent: #34495e;
         }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 30px 20px;
+        }
+
+        /* 頂部 header 區域：標題與按鈕左右分離 */
         .dashboard-header {
             margin-bottom: 30px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
+
         .dashboard-title {
             font-size: 24px;
             font-weight: 700;
@@ -40,14 +52,66 @@
             align-items: center;
             gap: 10px;
         }
+
+        .header-nav-btn {
+            background-color: #ffffff;
+            color: var(--primary-accent);
+            border: 1px solid var(--primary-accent);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .header-nav-btn:hover {
+            background-color: var(--primary-accent);
+            color: #ffffff;
+        }
+
+        /* Tab 樣式美化 (Bootstrap 客製) */
+        .nav-tabs {
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 25px;
+            gap: 4px;
+        }
+
+        .nav-tabs .nav-link {
+            font-weight: 600;
+            color: var(--text-muted);
+            border: none;
+            padding: 12px 24px;
+            transition: all 0.2s;
+            border-radius: 8px 8px 0 0;
+            background-color: transparent;
+            margin-right: 4px;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-accent);
+            background-color: rgba(52, 73, 94, 0.05);
+            border: none;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-accent);
+            background-color: #ffffff;
+            border-bottom: 3px solid var(--primary-accent);
+            font-weight: 700;
+        }
+
+        /* 卡片容器 (每個分頁獨立卡片) 保留原始卡片外觀 */
         .card-custom {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(148, 163, 184, 0.05);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             overflow: hidden;
         }
+
         .card-header-custom {
             background-color: #ffffff;
             border-bottom: 1px solid var(--border-color);
@@ -59,24 +123,25 @@
             justify-content: space-between;
             align-items: center;
         }
-		.header-nav-btn {
-            background-color: #ffffff;
-            color: var(--primary-accent);
-            border: 1px solid var(--primary-accent);
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: all 0.2s ease;
+
+        .badge-count {
+            background-color: #f1f5f9;
+            color: #64748b;
+            font-size: 13px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
         }
+
         .table-responsive {
             padding: 10px 20px 20px 20px;
         }
+
         .table {
             margin-bottom: 0;
             vertical-align: middle;
         }
+
         .table thead th {
             background-color: #f8fafc;
             color: var(--text-muted);
@@ -89,7 +154,8 @@
             cursor: pointer;
             position: relative;
         }
-        /* Tablesorter 排序箭头美化强化 */
+
+        /* Tablesorter 排序箭头强化 */
         .table thead th.tablesorter-headerAsc::after {
             content: " ▲";
             font-size: 10px;
@@ -97,6 +163,7 @@
             position: absolute;
             right: 4px;
         }
+
         .table thead th.tablesorter-headerDesc::after {
             content: " ▼";
             font-size: 10px;
@@ -104,35 +171,47 @@
             position: absolute;
             right: 4px;
         }
+
         .table tbody tr {
             border-bottom: 1px solid #f1f5f9;
             transition: background-color 0.2s ease;
         }
+
         .table tbody tr:hover {
             background-color: #f8fafc;
         }
+
         .table tbody td {
             padding: 14px 10px;
             font-size: 14px;
         }
+
         .symbol-link {
             text-decoration: none;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
         }
+
         .symbol-text {
             font-weight: 700;
+            font-size: 16px;
             color: #3b82f6;
         }
+
         .symbol-name-text {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-top: 0;
         }
+
         .symbol-link:hover .symbol-text {
             text-decoration: underline;
             color: #1d4ed8;
         }
+
         .timeframe-badge {
             background-color: #eff6ff;
             color: #2563eb;
@@ -140,23 +219,19 @@
             border-radius: 6px;
             font-size: 12px;
             font-weight: 500;
+            display: inline-block;
         }
+
         .pnl-positive {
             color: var(--stock-red);
             font-weight: 700;
         }
+
         .pnl-negative {
             color: var(--stock-green);
             font-weight: 700;
         }
-        .badge-count {
-            background-color: #f1f5f9;
-            color: #64748b;
-            font-size: 13px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-weight: 500;
-        }
+
         #loading-div {
             display: flex;
             justify-content: center;
@@ -165,113 +240,168 @@
             font-size: 16px;
             color: var(--text-muted);
             gap: 10px;
+            background: white;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        /* 分頁內容區塊過渡效果 */
+        .tab-pane {
+            transition: opacity 0.15s ease;
+        }
+        
+        /* 當某分頁沒有任何持倉時顯示友善提示 */
+        .empty-tab-message {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-muted);
+            background: var(--card-bg);
+            border-radius: 12px;
+            font-size: 15px;
         }
     </style>
 </head>
 <body>
 
 <div class="container-fluid">
+    <!-- 頂部 Header: 標題靠左，連結靠右 -->
     <header class="dashboard-header">
         <div class="dashboard-title">
             <span>📊 台股策略自動化持倉看板</span>
-			<a href="tw_chart.html" class="header-nav-btn">📊 進入完整 K 線圖看板 ➔</a>
         </div>
+        <a href="tw_chart.html" class="header-nav-btn">📊 進入完整 K 線圖看板 ➔</a>
     </header>
 
+    <!-- 載入提示區域 -->
     <div id="loading-div">
         <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
         <span>正在載入最新策略持倉清單與市場行情...</span>
     </div>
 
-    <div class="card card-custom" id="stock-card" style="display: none;">
-        <div class="card-header-custom">
-            <span>🏢 普通股持倉狀態</span>
-            <span class="badge-count" id="stock-count">0 檔持倉</span>
-        </div>
-        <div class="table-responsive">
-            <table class="table" id="stock-table">
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">股票代號 / 名稱</th>
-                        <th style="width: 12%;">交易週期</th>
-                        <th style="width: 13%;">持倉起日</th>
-                        <th style="width: 12%;">進場價</th>
-                        <th style="width: 13%;">最新日期</th>
-                        <th style="width: 12%;">最新收盤價</th>
-                        <th style="width: 13%;">波段未實現價差</th>
-                        <th style="width: 10%;">未平倉天數</th>
-                    </tr>
-                </thead>
-                <tbody id="stock-tbody"></tbody>
-            </table>
-        </div>
-    </div>
+    <!-- Bootstrap Tabs 核心結構 (三個分頁: 普通股 / ETF / 指數) -->
+    <div id="tabs-container" style="display: none;">
+        <ul class="nav nav-tabs" id="positionTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock-pane" type="button" role="tab" aria-controls="stock-pane" aria-selected="true">
+                    🏢 普通股 <span id="stock-tab-badge" class="badge bg-secondary ms-1">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="etf-tab" data-bs-toggle="tab" data-bs-target="#etf-pane" type="button" role="tab" aria-controls="etf-pane" aria-selected="false">
+                    📈 ETF <span id="etf-tab-badge" class="badge bg-secondary ms-1">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-pane" type="button" role="tab" aria-controls="index-pane" aria-selected="false">
+                    🌐 指數類 <span id="index-tab-badge" class="badge bg-secondary ms-1">0</span>
+                </button>
+            </li>
+        </ul>
 
-    <div class="card card-custom" id="etf-card" style="display: none;">
-        <div class="card-header-custom">
-            <span>📈 ETF 持倉狀態</span>
-            <span class="badge-count" id="etf-count">0 檔持倉</span>
-        </div>
-        <div class="table-responsive">
-            <table class="table" id="etf-table">
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">ETF 代號 / 名稱</th>
-                        <th style="width: 12%;">交易週期</th>
-                        <th style="width: 13%;">持倉起日</th>
-                        <th style="width: 12%;">進場價</th>
-                        <th style="width: 13%;">最新日期</th>
-                        <th style="width: 12%;">最新收盤價</th>
-                        <th style="width: 13%;">波段未實現價差</th>
-                        <th style="width: 10%;">未平倉天數</th>
-                    </tr>
-                </thead>
-                <tbody id="etf-tbody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="card card-custom" id="index-card" style="display: none;">
-        <div class="card-header-custom">
-            <span>🌐 指數類持倉狀態</span>
-            <span class="badge-count" id="index-count">0 檔持倉</span>
-        </div>
-        <div class="table-responsive">
-            <table class="table" id="index-table">
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">指數代號 / 名稱</th>
-                        <th style="width: 12%;">交易週期</th>
-                        <th style="width: 13%;">持倉起日</th>
-                        <th style="width: 12%;">進場價</th>
-                        <th style="width: 13%;">最新日期</th>
-                        <th style="width: 12%;">最新收盤價</th>
-                        <th style="width: 13%;">波段未實現價差</th>
-                        <th style="width: 10%;">未平倉天數</th>
-                    </tr>
-                </thead>
-                <tbody id="index-tbody"></tbody>
-            </table>
+        <div class="tab-content" id="positionTabsContent">
+            <!-- 普通股分頁 -->
+            <div class="tab-pane fade show active" id="stock-pane" role="tabpanel" aria-labelledby="stock-tab">
+                <div class="card card-custom" id="stock-card">
+                    <div class="card-header-custom">
+                        <span>📋 普通股持倉明細</span>
+                        <span class="badge-count" id="stock-count">0 檔持倉</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table" id="stock-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">股票代號 / 名稱</th>
+                                    <th style="width: 12%;">交易週期</th>
+                                    <th style="width: 13%;">持倉起日</th>
+                                    <th style="width: 12%;">進場價</th>
+                                    <th style="width: 13%;">最新日期</th>
+                                    <th style="width: 12%;">最新收盤價</th>
+                                    <th style="width: 13%;">波段未實現價差</th>
+                                    <th style="width: 10%;">未平倉天數</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- ETF 分頁 -->
+            <div class="tab-pane fade" id="etf-pane" role="tabpanel" aria-labelledby="etf-tab">
+                <div class="card card-custom" id="etf-card">
+                    <div class="card-header-custom">
+                        <span>📋 ETF持倉明細</span>
+                        <span class="badge-count" id="etf-count">0 檔持倉</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table" id="etf-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">ETF 代號 / 名稱</th>
+                                    <th style="width: 12%;">交易週期</th>
+                                    <th style="width: 13%;">持倉起日</th>
+                                    <th style="width: 12%;">進場價</th>
+                                    <th style="width: 13%;">最新日期</th>
+                                    <th style="width: 12%;">最新收盤價</th>
+                                    <th style="width: 13%;">波段未實現價差</th>
+                                    <th style="width: 10%;">未平倉天數</th>
+                                </tr>
+                            </thead>
+                            <tbody id="etf-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- 指數分頁 -->
+            <div class="tab-pane fade" id="index-pane" role="tabpanel" aria-labelledby="index-tab">
+                <div class="card card-custom" id="index-card">
+                    <div class="card-header-custom">
+                        <span>📋 指數類持倉明細</span>
+                        <span class="badge-count" id="index-count">0 檔持倉</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table" id="index-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">指數代號 / 名稱</th>
+                                    <th style="width: 12%;">交易週期</th>
+                                    <th style="width: 13%;">持倉起日</th>
+                                    <th style="width: 12%;">進場價</th>
+                                    <th style="width: 13%;">最新日期</th>
+                                    <th style="width: 12%;">最新收盤價</th>
+                                    <th style="width: 13%;">波段未實現價差</th>
+                                    <th style="width: 10%;">未平倉天數</th>
+                                </tr>
+                            </thead>
+                            <tbody id="index-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // 計算日期間隔天數的輔助函數
+    // 計算日期間隔天數的輔助函數 (修正判斷邏輯)
     function calculateDaysBetween(dateStr1, dateStr2) {
         if (!dateStr1 || !dateStr2) return '--';
         const d1 = new Date(dateStr1);
         const d2 = new Date(dateStr2);
-        if (isNaN(d1.getTime()) || !isNaN(d2.getTime())) {
+        if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
             const diffTime = Math.abs(d2 - d1);
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         }
         return '--';
     }
 
+    // 全域存放三大類別資料，方便後續若有動態需求 (目前只做渲染&排序)
+    let stockData = [];
+    let etfData = [];
+    let indexData = [];
+
     async function loadPositions() {
         try {
-            // 1. 同步讀取 股票基本清單
+            // 1. 同步讀取 股票基本清單 stocklist.csv (代號、名稱、類別)
             const resMaster = await fetch('TW/list/stocklist.csv');
             if (!resMaster.ok) throw new Error('無法取得基本母清單 stocklist.csv');
             const txtMaster = await resMaster.text();
@@ -291,14 +421,15 @@
                 }
             }
 
-            // 2. 同步讀取 當前未平倉部位清單
+            // 2. 讀取未平倉部位清單 unclosed_positions.csv
             const resPos = await fetch('TW/list/unclosed_positions.csv');
             if (!resPos.ok) throw new Error('無法取得持倉清單 unclosed_positions.csv');
             const txtPos = await resPos.text();
 
-            const stocksList = [];
-            const etfsList = [];
-            const indexList = []; // 新增：用來存放指數類別的陣列
+            // 清空各類別暫存陣列
+            const stocksTemp = [];
+            const etfsTemp = [];
+            const indicesTemp = [];
 
             const linesPos = txtPos.split(/\r?\n/);
             for (let i = 1; i < linesPos.length; i++) {
@@ -312,57 +443,110 @@
                     const latest_date = cols[4].trim();
                     const latest_close = parseFloat(cols[5]);
 
-                    const meta = masterMap[symbol] || { name: '未知個股', type: '普通股', industry: '未知' };
-                    const item = { symbol, timeframe, in_date, entry_close, latest_date, latest_close, name: meta.name };
+                    const meta = masterMap[symbol] || { name: '未知標的', type: '普通股', industry: '未知' };
+                    const item = { 
+                        symbol, 
+                        timeframe, 
+                        in_date, 
+                        entry_close, 
+                        latest_date, 
+                        latest_close, 
+                        name: meta.name,
+                        type: meta.type
+                    };
 
-                    // 依據對應類別分流
+                    // 依照原始業務邏輯分類 (股票、ETF、指數)
                     if (meta.type === 'ETF') {
-                        etfsList.push(item);
+                        etfsTemp.push(item);
                     } else if (meta.type === '指數') {
-                        indexList.push(item); // 歸類至指數
+                        indicesTemp.push(item);
                     } else {
-                        stocksList.push(item); // 預設歸類至普通股
+                        stocksTemp.push(item);   // 包含普通股、預設類型
                     }
                 }
             }
 
-            // 隱藏加載提示
+            // 依照持倉起日由近到遠排序 (保留原預設排序習慣，但用戶可透過表格排序任意調整)
+            const sortByDateDesc = (a, b) => new Date(b.in_date) - new Date(a.in_date);
+            stocksTemp.sort(sortByDateDesc);
+            etfsTemp.sort(sortByDateDesc);
+            indicesTemp.sort(sortByDateDesc);
+
+            stockData = stocksTemp;
+            etfData = etfsTemp;
+            indexData = indicesTemp;
+
+            // 隱藏加載提示，顯示整個分頁容器
             document.getElementById('loading-div').style.display = 'none';
+            const tabsContainer = document.getElementById('tabs-container');
+            if (tabsContainer) tabsContainer.style.display = 'block';
 
-            // 3. 渲染普通股表格
-            if (stocksList.length > 0) {
-                document.getElementById('stock-card').style.display = 'block';
-                document.getElementById('stock-count').innerText = `${stocksList.length} 檔持倉`;
-                renderTableRows('stock-tbody', stocksList);
-            }
+            // 更新各分頁標籤上的數量徽章
+            updateTabBadges();
 
-            // 4. 渲染 ETF 表格
-            if (etfsList.length > 0) {
-                document.getElementById('etf-card').style.display = 'block';
-                document.getElementById('etf-count').innerText = `${etfsList.length} 檔持倉`;
-                renderTableRows('etf-tbody', etfsList);
-            }
+            // 渲染表格內容
+            renderTableRows('stock-tbody', stockData);
+            renderTableRows('etf-tbody', etfData);
+            renderTableRows('index-tbody', indexData);
 
-            // 5. 渲染 指數 表格 (全新增)
-            if (indexList.length > 0) {
-                document.getElementById('index-card').style.display = 'block';
-                document.getElementById('index-count').innerText = `${indexList.length} 檔持倉`;
-                renderTableRows('index-tbody', indexList);
-            }
+            // 更新卡片標題旁的持倉數量
+            document.getElementById('stock-count').innerText = `${stockData.length} 檔持倉`;
+            document.getElementById('etf-count').innerText = `${etfData.length} 檔持倉`;
+            document.getElementById('index-count').innerText = `${indexData.length} 檔持倉`;
 
-            // 6. 初始化與觸發所有表格的 Tablesorter
-            initAndTriggerTableSorter();
+            // 若某類別無資料，可選擇在表格顯示提示列 (避免表格空空不好看)
+            showEmptyMessageIfNeeded('stock-tbody', stockData.length, '#stock-table');
+            showEmptyMessageIfNeeded('etf-tbody', etfData.length, '#etf-table');
+            showEmptyMessageIfNeeded('index-tbody', indexData.length, '#index-table');
+
+            // 初始化所有表格的 tablesorter 排序功能 (保留原本排序機制)
+            initTableSorter();
 
         } catch (err) {
-            document.getElementById('loading-div').innerHTML = `<span style=\"color: red; font-weight: bold;\">⚠️ 載入錯誤: ${err.message}</span>`;
+            document.getElementById('loading-div').innerHTML = `<span style="color: red; font-weight: bold;">⚠️ 載入錯誤: ${err.message}</span>`;
             console.error(err);
         }
     }
 
-    // 共用渲染表格 Rows 的函數
+    // 更新分頁按鈕上的數量小徽章
+    function updateTabBadges() {
+        const stockBadge = document.getElementById('stock-tab-badge');
+        const etfBadge = document.getElementById('etf-tab-badge');
+        const indexBadge = document.getElementById('index-tab-badge');
+        if (stockBadge) stockBadge.innerText = stockData.length;
+        if (etfBadge) etfBadge.innerText = etfData.length;
+        if (indexBadge) indexBadge.innerText = indexData.length;
+    }
+
+    // 若某表格無資料，顯示一行提示 (維持UI友善)
+    function showEmptyMessageIfNeeded(tbodyId, dataLen, tableSelector) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+        if (dataLen === 0 && tbody.children.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 8;
+            td.textContent = '📭 此類別目前尚無持倉部位';
+            td.style.textAlign = 'center';
+            td.style.padding = '40px';
+            td.style.color = '#94a3b8';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            // 若表格已經有排序器但資料為空，避免排序異常，不做其他動作
+        }
+    }
+
+    // 共用渲染表格 Rows 函數 (每個cell加入對應屬性)
     function renderTableRows(tbodyId, dataList) {
         const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
         tbody.innerHTML = '';
+        
+        if (dataList.length === 0) {
+            // 空資料時留待 showEmptyMessageIfNeeded 處理
+            return;
+        }
+
         dataList.forEach(item => {
             const tr = document.createElement('tr');
             const pnl = item.latest_close - item.entry_close;
@@ -377,31 +561,46 @@
             }
 
             const unclosedDays = calculateDaysBetween(item.in_date, item.latest_date);
-
+            // 處理成本價與收盤價的小數顯示
+            const entryDisplay = `$${item.entry_close.toFixed(2)}`;
+            const latestDisplay = `$${item.latest_close.toFixed(2)}`;
+            const pnlDisplay = isNaN(pnl) ? '--' : `${pnlSign}${pnl.toFixed(2)}`;
+            
             tr.innerHTML = `
                 <td>
-                    <a href="tw_chart.html?symbol=${item.symbol}" class="symbol-link" title="點擊查看 ${item.symbol} ${item.name} 的完整 K 線回測行情" style="flex-direction: row; align-items: center; gap: 8px;">
-                        <span class="symbol-text" style="font-size: 16px;">${item.symbol}</span>
-                        <span class="symbol-name-text" style="font-size: 16px; font-weight: 700; color: #2c3e50; margin-top: 0;">${item.name}</span>
+                    <a href="tw_chart.html?symbol=${encodeURIComponent(item.symbol)}" class="symbol-link" title="點擊查看 ${item.symbol} ${item.name} 的完整 K 線行情">
+                        <span class="symbol-text">${escapeHtml(item.symbol)}</span>
+                        <span class="symbol-name-text">${escapeHtml(item.name)}</span>
                     </a>
                 </td>
-                <td><span class="timeframe-badge">${item.timeframe}</span></td>
-                <td style="font-weight: 600; color: #2c3e50;">${item.in_date}</td>
-                <td>$${item.entry_close.toFixed(2)}</td>
-                <td style="color: var(--text-muted);">${item.latest_date}</td>
-                <td style="font-weight: 600;">$${item.latest_close.toFixed(2)}</td>
-                <td><span class="${pnlClass}">${pnlSign}${isNaN(pnl) ? '--' : pnl.toFixed(2)}</span></td>
+                <td><span class="timeframe-badge">${escapeHtml(item.timeframe)}</span></td>
+                <td style="font-weight: 600; color: #2c3e50;">${escapeHtml(item.in_date)}</td>
+                <td>${escapeHtml(entryDisplay)}</td>
+                <td style="color: var(--text-muted);">${escapeHtml(item.latest_date)}</td>
+                <td style="font-weight: 600;">${escapeHtml(latestDisplay)}</td>
+                <td><span class="${pnlClass}">${escapeHtml(pnlDisplay)}</span></td>
                 <td style="font-weight: 600; color: #475569;">${unclosedDays} 天</td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    // 處理所有表格排序機制的初始化與動態更新
-    function initAndTriggerTableSorter() {
+    // 簡易防XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // 全域表格排序初始化與動態更新 (保留原本排序功能)
+    function initTableSorter() {
         const sorterConfig = {
             theme: 'bootstrap_4',
-            sortList: [[2, 1]], // 預設使用第三欄 (持倉起日) 進行降序排序
+            sortList: [[2, 1]],   // 默認以持倉起日降序 (最新優先)
             headers: { 
                 0: { sorter: 'text' }, 
                 1: { sorter: 'text' }, 
@@ -414,23 +613,77 @@
             }
         };
 
-        // 針對現有的各個表格進行初始化或觸發更新
-        ['#stock-table', '#etf-table', '#index-table'].forEach(tableId => {
-            const $table = $(tableId);
+        // 三個表格分別做初始化或更新
+        const tables = ['#stock-table', '#etf-table', '#index-table'];
+        tables.forEach(selector => {
+            const $table = $(selector);
             if ($table.length && $table.find('tbody tr').length > 0) {
                 if (!$table.data('tablesorter')) {
                     $table.tablesorter(sorterConfig);
                 } else {
+                    // 如果資料有變動，觸發更新與重繪
                     $table.trigger('update');
+                    $table.trigger('applyWidgets');
+                }
+            } else if ($table.length && $table.find('tbody tr').length === 0) {
+                // 沒有資料的表格，不初始化排序，避免錯誤，但為了統一體驗也可跳過
+                if (!$table.data('tablesorter')) {
+                    // 不強制初始化空白表格，避免無意義
                 }
             }
         });
     }
 
+    // 監聽分頁切換事件 (選擇性功能：當切換到某分頁時重新調整表格寬度/排序，確保顯示正確)
+    function bindTabResizeHandler() {
+        const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabEls.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function (event) {
+                // 在分頁顯示後，重新觸發該分頁內表格的排序器重整（確保表格標題與數據對齊）
+                const targetId = event.target.getAttribute('data-bs-target');
+                if (targetId === '#stock-pane') {
+                    refreshTableSorter('#stock-table');
+                } else if (targetId === '#etf-pane') {
+                    refreshTableSorter('#etf-table');
+                } else if (targetId === '#index-pane') {
+                    refreshTableSorter('#index-table');
+                }
+                // 另外也可修復可能因隱藏顯示導致的寬度問題 (tablesorter 自動處理即可)
+            });
+        });
+    }
+
+    function refreshTableSorter(tableSelector) {
+        const $table = $(tableSelector);
+        if ($table.length && $table.data('tablesorter')) {
+            $table.trigger('applyWidgets');
+            $table.trigger('resize'); // 輕量觸發調整
+        } else if ($table.length && $table.find('tbody tr').length > 0) {
+            // 嘗試重新初始化 (預防萬一)
+            const sorterConfig = {
+                theme: 'bootstrap_4',
+                sortList: [[2, 1]],
+                headers: { 0: { sorter: 'text' }, 1: { sorter: 'text' }, 2: { sorter: 'date' }, 3: { sorter: 'digit' }, 4: { sorter: 'date' }, 5: { sorter: 'digit' }, 6: { sorter: 'digit' }, 7: { sorter: 'digit' } }
+            };
+            $table.tablesorter(sorterConfig);
+        }
+    }
+
+    // 確保資料載入完成後執行完整渲染及分頁監聽
     $(document).ready(function() {
-        loadPositions();
+        loadPositions().then(() => {
+            bindTabResizeHandler();
+            // 如果普通股、ETF、指數三個資料後續還需要補空提示已經在渲染時呼叫 showEmptyMessageIfNeeded 補足
+            // 再次確保空白表格有訊息
+            setTimeout(() => {
+                if (stockData.length === 0) showEmptyMessageIfNeeded('stock-tbody', 0, '#stock-table');
+                if (etfData.length === 0) showEmptyMessageIfNeeded('etf-tbody', 0, '#etf-table');
+                if (indexData.length === 0) showEmptyMessageIfNeeded('index-tbody', 0, '#index-table');
+                // 確保排序在動態內容填充後再次觸發更新
+                initTableSorter();
+            }, 100);
+        });
     });
 </script>
-
 </body>
 </html>

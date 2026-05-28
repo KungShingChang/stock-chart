@@ -48,7 +48,7 @@
         <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
             <i class="ti ti-menu-2"></i>
         </button>
-        <div class="fw-bold ms-3" id="page-title">台股策略持倉看板</div>
+        <div class="fw-bold ms-3" id="page-title">交易策略管理系統</div>
     </header>
 
     <!-- 顯示目標頁面的容器 -->
@@ -57,21 +57,36 @@
 
 <script>
     function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('active');
-        document.getElementById('main-content').classList.toggle('active');
-    }
+		const sidebar = document.getElementById('sidebar');
+		const mainContent = document.getElementById('main-content');
+		
+		// 檢查目前是否處於手機/平板模式 (小於或等於 992px)
+		if (window.innerWidth <= 992) {
+			// 手機版：切換 show 類別來顯示/隱藏側邊欄
+			sidebar.classList.toggle('show');
+		} else {
+			// 電腦版：保留原本切換 active 的縮排邏輯
+			sidebar.classList.toggle('active');
+			mainContent.classList.toggle('active');
+		}
+	}
 
     function loadPage(url, element) {
-        // 更新 iframe 內容
-        document.getElementById('content-frame').src = url;
-        
-        // 更新標題
-        document.getElementById('page-title').innerText = element.innerText.trim() + '看板';
+		// 更新 iframe 內容
+		document.getElementById('content-frame').src = url;
+		
+		// 更新標題
+		document.getElementById('page-title').innerText = element.innerText.trim() + '看板';
 
-        // 更新 Active 樣式
-        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-        element.classList.add('active');
-    }
+		// 更新 Active 樣式
+		document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+		element.classList.add('active');
+
+		// ✨ 加分體驗：在手機版點選功能後，自動把側邊欄收回去
+		if (window.innerWidth <= 992) {
+			document.getElementById('sidebar').classList.remove('show');
+		}
+	}
 </script>
 </body>
 </html>

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>📊 台股模型開發清單</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #1e2a3e;
+            --text-muted: #5a6e7c;
+            --stock-red: #e53e3e;
+            --stock-green: #2c7a4d;
+            --border-color: #e2e8f0;
+            --primary-accent: #2c3e50;
+            --link-hover: #2b6cb0;
+            --header-bg: #f9fafb;
+            --sort-arrow-color: #2c5282;
+            --hover-bg: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* 頂部導航 */
+        .header-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--primary-accent);
+            padding-bottom: 16px;
+            gap: 12px;
+        }
+
+        .header-title {
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.2px;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-btn {
+            background-color: white;
+            color: var(--primary-accent);
+            border: 1px solid var(--primary-accent);
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--primary-accent);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* 雙欄佈局 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 1100px) {
+            .dashboard-grid {
+                grid-template-columns: 1.3fr 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.05);
+            padding: 20px 0 20px 0;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.2s;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--primary-accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 篩選器 */
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-select {
+            padding: 8px 14px;
+            border-radius: 40px;
+            border: 1px solid #cbd5e0;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background-color: white;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .sort-indicator {
+            font-size: 0.75rem;
+            margin-left: 5px;
+            font-weight: normal;
+            color: var(--sort-arrow-color);
+        }
+
+        /* 表格容器 — 可滾動 */
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 620px;
+            margin-top: 8px;
+            scrollbar-width: thin;
+        }
+
+        .performance-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 680px;
+        }
+
+        .performance-table th {
+            background-color: var(--header-bg);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 14px 12px;
+            border-bottom: 1.5px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 15;
+            cursor: pointer;
+            user-select: none;
+			outline: none;     /* 移除點擊後的藍色框線 */
+            transition: background 0.1s;
+            text-align: left;
+            white-space: nowrap;
+        }
+		
+		.performance-table th:focus {
+            outline: none;     /* 確保 Tab 聚焦時也沒有藍色框線 */
+        }
+		
+        .performance-table th:hover {
+            background-color: #e2e8f0;
+        }
+
+        .performance-table td {
+            padding: 12px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+            transition: background 0.1s;
+            vertical-align: middle;
+        }
+
+        .performance-table tr {
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .performance-table tr:hover td {
+            background-color: var(--hover-bg);
+        }
+
+        tr.active-row td {
+            background-color: #e6f2fb !important;
+            border-left: 3px solid var(--link-hover);
+        }
+
+        /* 標籤美化 */
+        .symbol-badge {
+            font-weight: 700;
+            background: #eef2f5;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            border: 1px solid #cbd5e1;
+            display: inline-block;
+        }
+        .symbol-name {
+            font-weight: 600;
+            margin-left: 8px;
+            font-size: 0.85rem;
+        }
+        .timeframe-badge {
+            background: #e9ecef;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #2c3e50;
+            display: inline-block;
+        }
+        .val-positive {
+            color: var(--stock-red);
+            font-weight: 700;
+        }
+        .val-negative {
+            color: var(--stock-green);
+            font-weight: 700;
+        }
+
+        /* 右側報告區域 */
+        .report-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 450px;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .report-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .text-report-viewer {
+            background-color: #1e1e2f;
+            color: #e2e8f0;
+            padding: 18px;
+            border-radius: 16px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            overflow-y: auto;
+            max-height: 580px;
+            white-space: pre-wrap;
+            border: 1px solid #334155;
+        }
+        .csv-table-wrapper {
+            overflow-y: auto;
+            max-height: 580px;
+            border-radius: 12px;
+        }
+        .csv-mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.7rem;
+        }
+        .csv-mini-table th {
+            background: #2d3748;
+            color: white;
+            padding: 6px 10px;
+            position: sticky;
+            top: 0;
+        }
+        .loading-spinner {
+            text-align: center;
+            padding: 50px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .active-report-tag {
+            font-size: 0.7rem;
+            background: #eef2ff;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1 class="header-title">📊 台股模型開發清單</h1>        
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- 左側：模型績效表格 + 排序功能 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🚀 開發模型績效清單 <span style="font-size:0.7rem;">✨ 點擊欄位排序</span></h2>
+                <div class="filter-group">
+                    <select id="typeFilter" class="filter-select">
+                        <option value="ALL">📌 全部模型</option>
+                        <option value="股票">📈 股票模型</option>
+                        <option value="ETF">📊 ETF 模型</option>
+                        <option value="index">🌍 指數模型</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-wrapper" id="tableWrapper">
+                <div id="listLoading" class="loading-spinner">📡 同步績效數據中，請稍後...</div>
+                <table id="performanceTable" class="performance-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th data-sort="symbol">商品代號 ⬍</th>
+                            <th data-sort="timeframe">交易週期 ⬍</th>
+                            <th data-sort="winRate">勝率 ⬍</th>
+                            <th data-sort="profitFactor">盈利因子 ⬍</th>
+                            <th data-sort="netProfit">總淨利 ⬍</th>
+                            <th data-sort="totalTrades">交易次數 ⬍</th>
+                        </tr>
+                    </thead>
+                    <tbody id="performanceBody">
+                        <!-- 動態載入 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 右側：詳細報告區域 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📁 完整回測報告</h2>
+                <span id="activeReportName" class="active-report-tag">尚未選取模型</span>
+            </div>
+            <div id="reportArea" style="flex:1; overflow: hidden; padding: 0 0 8px 0;">
+                <div class="report-placeholder">
+                    <span style="font-size: 48px;">📄</span>
+                    <span style="margin-top: 12px;">點擊左側任一行模型，<br>載入完整策略回測報告</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- 全域變數 ----------
+    let stockMetaMap = new Map();          // 股票/ETF 元數據
+    let rawPerformanceData = [];            // 原始績效物件陣列
+    let currentFilter = "ALL";              // 當前篩選
+    let currentSortedField = "symbol";      // 當前排序欄位 key
+    let currentSortAsc = true;              // true: 升序, false: 降序
+    
+    // ---------- 輔助函數 ----------
+    function parseCSV(text) {
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length === 0) return [];
+        let firstLine = lines[0].replace(/^\uFEFF/, "");
+        // 自動識別分隔符
+        const commas = (firstLine.match(/,/g) || []).length;
+        const semicolons = (firstLine.match(/;/g) || []).length;
+        const tabs = (firstLine.match(/\t/g) || []).length;
+        let delimiter = ",";
+        if (semicolons > commas && semicolons > tabs) delimiter = ";";
+        else if (tabs > commas && tabs > semicolons) delimiter = "\t";
+        
+        const headers = firstLine.split(delimiter).map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+        const result = [];
+        for (let i = 1; i < lines.length; i++) {
+            const parts = lines[i].split(delimiter);
+            if (parts.length < headers.length) continue;
+            const obj = {};
+            headers.forEach((h, idx) => {
+                let val = (parts[idx] || "").replace(/^["']|["']$/g, '').trim();
+                obj[h] = val;
+            });
+            result.push(obj);
+        }
+        return result;
+    }
+
+    // 模糊匹配性能欄位 (因應不同csv結構)
+    function getFieldValue(item, possibleKeys, defaultValue) {
+        const keys = Object.keys(item);
+        for (let pk of possibleKeys) {
+            const found = keys.find(k => k.toLowerCase().replace(/[_\s]/g, '') === pk.toLowerCase().replace(/[_\s]/g, ''));
+            if (found) return item[found];
+        }
+        return defaultValue;
+    }
+
+    // 格式化勝率 (可自動轉換小數)
+    function formatWinRate(val) {
+        if (val === undefined || val === null || val === '') return '0.0%';
+        let str = String(val).trim();
+        if (str.endsWith('%')) return str;
+        let num = parseFloat(str);
+        if (isNaN(num)) return str;
+        if (num > 0 && num <= 1.0) return (num * 100).toFixed(1) + '%';
+        return num.toFixed(1) + '%';
+    }
+    function parseWinRateNumber(val) {
+        if (val === undefined || val === null) return 0;
+        let str = String(val).trim();
+        if (str.endsWith('%')) str = str.slice(0, -1);
+        let num = parseFloat(str);
+        if (isNaN(num)) return 0;
+        if (num > 0 && num <= 1) return num * 100;
+        return num;
+    }
+    function formatProfitFactor(val) {
+        let num = parseFloat(val);
+        return isNaN(num) ? '1.00' : num.toFixed(2);
+    }
+    function parseProfitFactor(val) {
+        let num = parseFloat(val);
+        return isNaN(num) ? 1.0 : num;
+    }
+    function formatNetProfit(val) {
+        let num = parseFloat(val);
+        return isNaN(num) ? 0 : num;
+    }
+    function formatTimeframe(tfStr) {
+        if (!tfStr) return '週 K';
+        let clean = tfStr.toLowerCase();
+        if (clean.includes('week')) {
+            let num = clean.match(/\d+/);
+            if (num && num[0] === '2') return '雙週 K';
+            return num ? `${num[0]}週 K` : '週 K';
+        }
+        if (clean.includes('day')) return '日 K';
+        if (clean.includes('month')) return '月 K';
+        return tfStr;
+    }
+
+    // 獲取商品類型 (根據stocklist或直覺)
+    function getSecurityType(symbol) {
+        const meta = stockMetaMap.get(symbol);
+        if (meta && meta.type) return meta.type;
+        if (!symbol) return 'ETF';
+        const upSym = symbol.toUpperCase();
+        if (upSym.startsWith('^') || /^[A-Za-z]/.test(upSym)) return '指數';
+        if (upSym.length >= 4 && upSym.startsWith('00') && !isNaN(parseInt(upSym.substring(0,2)))) return 'ETF';
+        return '股票';
+    }
+
+    // 構建完整模型物件陣列
+    function buildModelsFromRaw() {
+        const models = [];
+        for (let item of rawPerformanceData) {
+            let symbol = item['symbol'] ? item['symbol'].trim() : (item['商品代號'] || '').trim();
+            if (!symbol) continue;
+            const rawWin = getFieldValue(item, ['winrate','win %','winrate%','勝率'], '0');
+            const rawPf = getFieldValue(item, ['profitfactor','pf','盈利因子'], '1.0');
+            const rawNet = getFieldValue(item, ['netprofit','net profit','總淨利'], '0');
+            const rawTrades = getFieldValue(item, ['trades','trade','交易次數'], '0');
+            const rawTf = getFieldValue(item, ['timeframe','週期'], '週 K');
+            const metaName = stockMetaMap.get(symbol)?.name || (item['名稱'] || '未命名');
+            
+            models.push({
+                symbol: symbol,
+                name: metaName,
+                timeframeRaw: rawTf,
+                timeframe: formatTimeframe(rawTf),
+                winRateRaw: rawWin,
+                winRateNum: parseWinRateNumber(rawWin),
+                profitFactorRaw: rawPf,
+                profitFactorNum: parseProfitFactor(rawPf),
+                netProfitRaw: rawNet,
+                netProfitNum: formatNetProfit(rawNet),
+                totalTradesRaw: rawTrades,
+                totalTradesNum: parseInt(rawTrades) || 0,
+                securityType: getSecurityType(symbol)
+            });
+        }
+        return models;
+    }
+
+    // 排序 + 篩選核心
+    let allModelsCache = [];
+    function filterAndSortModels() {
+        let filtered = allModelsCache.filter(m => {
+            if (currentFilter === 'ALL') return true;
+            if (currentFilter === '股票') return m.securityType === '股票';
+            if (currentFilter === 'ETF') return m.securityType === 'ETF';
+            if (currentFilter === 'index') return m.securityType === '指數';
+            return true;
+        });
+        // 排序
+        filtered.sort((a, b) => {
+            let aVal, bVal;
+            switch (currentSortedField) {
+                case 'symbol':
+                    aVal = a.symbol;
+                    bVal = b.symbol;
+                    break;
+                case 'timeframe':
+                    aVal = a.timeframe;
+                    bVal = b.timeframe;
+                    break;
+                case 'winRate':
+                    aVal = a.winRateNum;
+                    bVal = b.winRateNum;
+                    break;
+                case 'profitFactor':
+                    aVal = a.profitFactorNum;
+                    bVal = b.profitFactorNum;
+                    break;
+                case 'netProfit':
+                    aVal = a.netProfitNum;
+                    bVal = b.netProfitNum;
+                    break;
+                case 'totalTrades':
+                    aVal = a.totalTradesNum;
+                    bVal = b.totalTradesNum;
+                    break;
+                default: aVal = a.symbol; bVal = b.symbol;
+            }
+            if (typeof aVal === 'string') {
+                let cmp = aVal.localeCompare(bVal, 'zh');
+                return currentSortAsc ? cmp : -cmp;
+            } else {
+                if (aVal === bVal) return 0;
+                let cmp = aVal < bVal ? -1 : 1;
+                return currentSortAsc ? cmp : -cmp;
+            }
+        });
+        return filtered;
+    }
+
+    // 渲染左側表格
+    function renderPerformanceList() {
+        const tbody = document.getElementById('performanceBody');
+        const tableElem = document.getElementById('performanceTable');
+        const loadingDiv = document.getElementById('listLoading');
+        if (!allModelsCache.length && rawPerformanceData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">暫無數據</td></tr>';
+            return;
+        }
+        const filteredSorted = filterAndSortModels();
+        tbody.innerHTML = '';
+        if (filteredSorted.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">無符合此類型的模型</td></tr>';
+            tableElem.style.display = 'table';
+            loadingDiv.style.display = 'none';
+            return;
+        }
+        for (let model of filteredSorted) {
+            const tr = document.createElement('tr');
+            const winRateDisplay = formatWinRate(model.winRateRaw);
+            const profitFactorDisplay = (parseFloat(model.winRateRaw) >= 100) ? "" : model.profitFactorNum.toFixed(2); // 根據您的需求修改邏輯：勝率為 100% 時，顯示為空字串，否則顯示格式化後的數值
+            const netProfitNum = model.netProfitNum;
+            const pnlClass = netProfitNum >= 0 ? 'val-positive' : 'val-negative';
+            const pnlSign = netProfitNum > 0 ? '+' : '';
+            tr.setAttribute('data-symbol', model.symbol);
+            tr.innerHTML = `
+                <td><span class="symbol-badge">${escapeHtml(model.symbol)}</span><span class="symbol-name">${escapeHtml(model.name)}</span></td>
+                <td><span class="timeframe-badge">${escapeHtml(model.timeframe)}</span></td>
+                <td style="font-weight:700;">${winRateDisplay}</td>
+                <td style="font-weight:700;">${profitFactorDisplay}</td>
+                <td class="${pnlClass}">${pnlSign}${netProfitNum.toFixed(2)}</td>
+                <td style="font-weight:600;">${model.totalTradesNum} 次</td>
+            `;
+            tr.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('#performanceBody tr').forEach(r => r.classList.remove('active-row'));
+                tr.classList.add('active-row');
+                loadDetailReport(model.symbol, model.name, model.timeframe);
+            });
+            tbody.appendChild(tr);
+        }
+        tableElem.style.display = 'table';
+        loadingDiv.style.display = 'none';
+        // 更新表頭排序指示器
+        updateSortIndicators();
+    }
+
+    function updateSortIndicators() {
+        const ths = document.querySelectorAll('.performance-table th');
+        ths.forEach(th => {
+            const field = th.getAttribute('data-sort');
+            let originalText = th.innerText.replace(/[⬍⬏▲▼]/g, '').trim();
+            if (field === currentSortedField) {
+                const arrow = currentSortAsc ? ' ▲' : ' ▼';
+                th.innerText = originalText + arrow;
+            } else {
+                th.innerText = originalText + ' ⬍';
+            }
+        });
+    }
+
+    // 載入詳細報告 (雙路徑)
+    async function loadDetailReport(symbol, name, timeframe) {
+        const reportArea = document.getElementById('reportArea');
+        const activeSpan = document.getElementById('activeReportName');
+        activeSpan.innerText = `⏳ 載入 ${symbol}`;
+        reportArea.innerHTML = `<div class="loading-spinner">📖 讀取 ${symbol}.csv / .txt 回測報告...</div>`;
+        
+        const possiblePaths = [
+            `Developerment/Taiwan/${symbol}.csv`,
+            `Developerment/Taiwan/${symbol}.txt`,
+            `Developement/Taiwan/${symbol}.csv`,
+            `Developement/Taiwan/${symbol}.txt`
+        ];
+        let response = null;
+        let usedPath = '';
+        for (let path of possiblePaths) {
+            try {
+                const res = await fetch(path);
+                if (res.ok) {
+                    response = res;
+                    usedPath = path;
+                    break;
+                }
+            } catch(e) {}
+        }
+        if (!response) {
+            reportArea.innerHTML = `
+                <div class="report-placeholder" style="color: #b91c1c;">
+                    <span style="font-size:42px;">⚠️</span>
+                    <span>無法定位 ${symbol} 的詳細報告<br><small>預期路徑: Developerment/Taiwan/${symbol}.csv 或 .txt</small></span>
+                </div>`;
+            activeSpan.innerText = `❌ ${symbol} 無報告`;
+            return;
+        }
+        const rawText = await response.text();
+        activeSpan.innerText = `📄 ${symbol} · ${name} (${timeframe})`;
+        const isCsv = usedPath.endsWith('.csv') || (rawText.includes(',') && rawText.split('\n')[0].split(',').length >= 2);
+        if (isCsv && rawText.split('\n').length > 1) {
+            renderCsvReportSmart(rawText, reportArea);
+        } else {
+            renderTextReportSmart(rawText, reportArea);
+        }
+    }
+
+    function renderCsvReportSmart(csvText, container) {
+        const parsed = parseCSV(csvText);
+        if (!parsed.length) {
+            container.innerHTML = `<div class="report-placeholder">報告檔案為空或格式無法解析</div>`;
+            return;
+        }
+        const headers = Object.keys(parsed[0]);
+        const tableHtml = `
+            <div class="csv-table-wrapper" style="overflow-x:auto; max-height:580px;">
+                <table class="csv-mini-table" style="width:100%; border-collapse:collapse; font-size:0.7rem;">
+                    <thead>
+                        <tr>${headers.map(h => `<th style="background:#2c3e50; color:white; padding:6px 10px; position:sticky; top:0;">${escapeHtml(h.toUpperCase())}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${parsed.slice(0, 200).map(row => {
+                            return `<tr>${headers.map(h => {
+                                let val = row[h] || '';
+                                let num = parseFloat(val);
+                                if (!isNaN(num) && (h.includes('profit') || h.includes('pnl') || h.includes('損益') || h.includes('net'))) {
+                                    const cls = num >= 0 ? 'val-positive' : 'val-negative';
+                                    return `<td class="${cls}" style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${num > 0 ? '+' : ''}${num.toFixed(2)}</td>`;
+                                }
+                                return `<td style="padding:6px 8px; border-bottom:1px solid #e2e8f0;">${escapeHtml(val)}</td>`;
+                            }).join('')}</tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+                ${parsed.length > 200 ? '<div style="padding:10px; text-align:center; color:#7f8c8d;">⚠️ 僅顯示前200筆交易紀錄</div>' : ''}
+            </div>
+        `;
+        container.innerHTML = `<div class="report-content">${tableHtml}</div>`;
+    }
+
+    function renderTextReportSmart(text, container) {
+        container.innerHTML = `<div class="report-content"><pre class="text-report-viewer">${escapeHtml(text)}</pre></div>`;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // ----- 初始化系統: 讀取stocklist + performance.csv -----
+    async function initDashboard() {
+        try {
+            // 讀取股票名稱對照表
+            const stockRes = await fetch('../TW/list/stocklist.csv').catch(() => null);
+            if (stockRes && stockRes.ok) {
+                const txt = await stockRes.text();
+                const rows = parseCSV(txt);
+                rows.forEach(row => {
+                    const sym = row.symbol ? row.symbol.trim() : '';
+                    if (sym) {
+                        stockMetaMap.set(sym, {
+                            name: row.symbol_name ? row.symbol_name.trim() : sym,
+                            type: row.security_type ? row.security_type.trim() : ''
+                        });
+                    }
+                });
+            }
+            // 取得績效主檔案
+            let perfResp = await fetch('Developerment/Taiwan/performance.csv').catch(() => null);
+            if (!perfResp || !perfResp.ok) {
+                perfResp = await fetch('Developement/Taiwan/performance.csv').catch(() => null);
+            }
+            if (!perfResp || !perfResp.ok) {
+                throw new Error("未找到 performance.csv 請確認路徑 Developerment/Taiwan/performance.csv");
+            }
+            const perfText = await perfResp.text();
+            rawPerformanceData = parseCSV(perfText);
+            allModelsCache = buildModelsFromRaw();
+            
+            // 隱藏loading 顯示表格
+            document.getElementById('listLoading').style.display = 'none';
+            document.getElementById('performanceTable').style.display = 'table';
+            // 初次渲染
+            renderPerformanceList();
+            
+            // 監聽篩選下拉變化
+            const filterSelect = document.getElementById('typeFilter');
+            filterSelect.addEventListener('change', (e) => {
+                currentFilter = e.target.value;
+                renderPerformanceList();
+            });
+            // 監聽表頭排序事件
+            const ths = document.querySelectorAll('.performance-table th');
+            ths.forEach(th => {
+                th.addEventListener('click', () => {
+                    const sortField = th.getAttribute('data-sort');
+                    if (sortField === currentSortedField) {
+                        currentSortAsc = !currentSortAsc;
+                    } else {
+                        currentSortedField = sortField;
+                        currentSortAsc = true;
+                    }
+                    renderPerformanceList();
+                });
+            });
+        } catch (err) {
+            document.getElementById('listLoading').innerHTML = `<span style="color:#e53e3e;">⚠️ 初始化失敗: ${err.message}</span>`;
+            console.error(err);
+        }
+    }
+    window.onload = initDashboard;
+</script>
+</body>
+</html>
