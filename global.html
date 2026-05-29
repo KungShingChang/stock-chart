@@ -13,12 +13,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/extras/jquery.tablesorter.widgets.min.js"></script>
     
     <style>
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            padding: 30px 20px;
-        }
         :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
@@ -27,16 +21,28 @@
             --stock-red: #ef5350;
             --stock-green: #26a69a;
             --border-color: #e2e8f0;
+            --primary-accent: #34495e;
         }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 30px 20px;
+        }
+
+        /* 頂部 header 區域：標題與按鈕左右分離 */
         .dashboard-header {
-            margin-bottom: 25px;
+            margin-bottom: 30px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            gap: 15px;
         }
+
         .dashboard-title {
             font-size: 24px;
             font-weight: 700;
@@ -45,72 +51,96 @@
             align-items: center;
             gap: 10px;
         }
-        /* 導覽按鈕靠最右側與外觀美化 */
+
         .header-nav-btn {
-            text-decoration: none;
-            background-color: #3b82f6;
-            color: white !important;
+            background-color: #ffffff;
+            color: var(--primary-accent);
+            border: 1px solid var(--primary-accent);
             padding: 8px 16px;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 14px;
-            font-weight: 600;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-        }
-        .header-nav-btn:hover {
-            background-color: #1d4ed8;
-            transform: translateY(-1px);
-        }
-
-        /* 自訂 Tabs 樣式與仿造修正 */
-        .nav-tabs-custom {
-            border-bottom: 2px solid var(--border-color);
-            margin-bottom: 20px;
-            gap: 5px;
-        }
-        .nav-tabs-custom .nav-link {
-            color: var(--text-muted);
-            border: 1px solid transparent;
-            border-radius: 8px 8px 0 0;
-            font-weight: 600;
-            padding: 10px 20px;
-            font-size: 15px;
+            font-weight: bold;
+            text-decoration: none;
             transition: all 0.2s ease;
-            background: #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .nav-tabs-custom .nav-link:hover {
-            background-color: #cbd5e1;
-            color: var(--text-main);
-            border-color: transparent;
-        }
-        .nav-tabs-custom .nav-link.active {
-            color: #2563eb;
-            background-color: var(--card-bg);
-            border-color: var(--border-color) var(--border-color) var(--card-bg);
-            border-width: 2px 2px 0 2px;
-            position: relative;
-            margin-bottom: -2px;
+            white-space: nowrap;
         }
 
+        .header-nav-btn:hover {
+            background-color: var(--primary-accent);
+            color: #ffffff;
+        }
+
+        /* Tab 樣式美化 (與 taiwan.html 完全一致) */
+        .nav-tabs {
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 25px;
+            gap: 4px;
+        }
+
+        .nav-tabs .nav-link {
+            font-weight: 600;
+            color: var(--text-muted);
+            border: none;
+            padding: 12px 24px;
+            transition: all 0.2s;
+            border-radius: 8px 8px 0 0;
+            background-color: transparent;
+            margin-right: 4px;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-accent);
+            background-color: rgba(52, 73, 94, 0.05);
+            border: none;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-accent);
+            background-color: #ffffff;
+            border-bottom: 3px solid var(--primary-accent);
+            font-weight: 700;
+        }
+
+        /* 卡片容器 */
         .card-custom {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 0 0 12px 12px;
-            border-top: none;
+            border-radius: 12px;
             box-shadow: 0 4px 6px rgba(148, 163, 184, 0.05);
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             overflow: hidden;
         }
-        .table-responsive {
-            padding: 20px;
+
+        .card-header-custom {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 18px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #34495e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .badge-count {
+            background-color: #f1f5f9;
+            color: #64748b;
+            font-size: 13px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .table-responsive {
+            padding: 10px 20px 20px 20px;
+        }
+
         .table {
             margin-bottom: 0;
             vertical-align: middle;
         }
+
         .table thead th {
             background-color: #f8fafc;
             color: var(--text-muted);
@@ -123,6 +153,7 @@
             cursor: pointer;
             position: relative;
         }
+
         .table thead th.tablesorter-headerAsc::after {
             content: " ▲";
             font-size: 10px;
@@ -130,6 +161,7 @@
             position: absolute;
             right: 4px;
         }
+
         .table thead th.tablesorter-headerDesc::after {
             content: " ▼";
             font-size: 10px;
@@ -137,32 +169,47 @@
             position: absolute;
             right: 4px;
         }
+
         .table tbody tr {
             border-bottom: 1px solid #f1f5f9;
             transition: background-color 0.2s ease;
         }
+
         .table tbody tr:hover {
             background-color: #f8fafc;
         }
+
         .table tbody td {
             padding: 14px 10px;
             font-size: 14px;
         }
+
         .symbol-link {
             text-decoration: none;
             display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
         }
+
         .symbol-text {
             font-weight: 700;
+            font-size: 16px;
             color: #3b82f6;
         }
+
         .symbol-name-text {
-            color: var(--text-muted);
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-top: 0;
         }
+
         .symbol-link:hover .symbol-text {
             text-decoration: underline;
             color: #1d4ed8;
         }
+
         .timeframe-badge {
             background-color: #eff6ff;
             color: #2563eb;
@@ -170,23 +217,19 @@
             border-radius: 6px;
             font-size: 12px;
             font-weight: 500;
+            display: inline-block;
         }
+
         .pnl-positive {
             color: var(--stock-red);
             font-weight: 700;
         }
+
         .pnl-negative {
             color: var(--stock-green);
             font-weight: 700;
         }
-        .badge-count {
-            background-color: #f1f5f9;
-            color: #64748b;
-            font-size: 12px;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-weight: 500;
-        }
+
         #loading-div {
             display: flex;
             justify-content: center;
@@ -195,12 +238,29 @@
             font-size: 16px;
             color: var(--text-muted);
             gap: 10px;
+            background: white;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .tab-pane {
+            transition: opacity 0.15s ease;
+        }
+        
+        .empty-tab-message {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-muted);
+            background: var(--card-bg);
+            border-radius: 12px;
+            font-size: 15px;
         }
     </style>
 </head>
 <body>
 
 <div class="container-fluid">
+    <!-- 頂部 Header: 標題靠左，連結靠右 (與 taiwan.html 相同風格) -->
     <header class="dashboard-header">
         <div class="dashboard-title">
             <span>📊 全球商品多策略自動化持倉看板</span>
@@ -208,23 +268,35 @@
         <a href="global_chart.html" class="header-nav-btn">📊 進入完整 K 線圖看板 ➔</a>
     </header>
 
+    <!-- 載入提示區域 -->
     <div id="loading-div">
         <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
         <span>正在載入最新全球商品持倉清單與市場行情...</span>
     </div>
 
-    <div id="main-content-area" style="display: none;">
-        <ul class="nav nav-tabs nav-tabs-custom" id="strategyTabs" role="tablist">
+    <!-- Bootstrap Tabs 核心結構 (新增外匯/匯率分頁) -->
+    <div id="tabs-container" style="display: none;">
+        <ul class="nav nav-tabs" id="positionTabs" role="tablist">
             <li class="nav-item" role="presentation" id="tab-commodity-li" style="display: none;">
-                <button class="nav-link active" id="commodity-tab" data-bs-toggle="tab" data-bs-target="#commodity-pane" type="button" role="tab" aria-controls="commodity-pane" aria-selected="true">
-                    🪙 貴金屬與商品 <span class="badge-count" id="commodity-count">0 檔</span>
+                <button class="nav-link" id="commodity-tab" data-bs-toggle="tab" data-bs-target="#commodity-pane" type="button" role="tab" aria-controls="commodity-pane" aria-selected="false">
+                    🪙 貴金屬與商品 <span id="commodity-tab-badge" class="badge bg-secondary ms-1">0</span>
                 </button>
             </li>
-            </ul>
+            <li class="nav-item" role="presentation" id="tab-fx-li" style="display: none;">
+                <button class="nav-link" id="fx-tab" data-bs-toggle="tab" data-bs-target="#fx-pane" type="button" role="tab" aria-controls="fx-pane" aria-selected="false">
+                    💱 外匯/匯率 <span id="fx-tab-badge" class="badge bg-secondary ms-1">0</span>
+                </button>
+            </li>
+        </ul>
 
-        <div class="tab-content" id="strategyTabsContent">
-            <div class="tab-pane fade show active" id="commodity-pane" role="tabpanel" aria-labelledby="commodity-tab" tabindex="0">
+        <div class="tab-content" id="positionTabsContent">
+            <!-- 貴金屬與商品分頁 -->
+            <div class="tab-pane fade" id="commodity-pane" role="tabpanel" aria-labelledby="commodity-tab" tabindex="0">
                 <div class="card card-custom">
+                    <div class="card-header-custom">
+                        <span>📋 貴金屬與商品持倉明細</span>
+                        <span class="badge-count" id="commodity-count">0 檔持倉</span>
+                    </div>
                     <div class="table-responsive">
                         <table class="table" id="commodity-table">
                             <thead>
@@ -240,6 +312,32 @@
                                 </tr>
                             </thead>
                             <tbody id="commodity-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- 外匯/匯率分頁 (新增) -->
+            <div class="tab-pane fade" id="fx-pane" role="tabpanel" aria-labelledby="fx-tab" tabindex="0">
+                <div class="card card-custom">
+                    <div class="card-header-custom">
+                        <span>📋 外匯/匯率持倉明細</span>
+                        <span class="badge-count" id="fx-count">0 檔持倉</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table" id="fx-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">貨幣代碼 / 名稱</th>
+                                    <th style="width: 12%;">交易週期</th>
+                                    <th style="width: 13%;">持倉起日</th>
+                                    <th style="width: 12%;">進場價</th>
+                                    <th style="width: 13%;">最新日期</th>
+                                    <th style="width: 12%;">最新收盤價</th>
+                                    <th style="width: 13%;">波段未實現價差</th>
+                                    <th style="width: 10%;">未平倉天數</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fx-tbody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -261,94 +359,58 @@
         return '--';
     }
 
-    async function loadPositions() {
-        try {
-            // 1. 同步讀取 全球商品基本清單 (Merge 母檔案)
-            const resMaster = await fetch('GLOBAL/list/stocklist.csv');
-            if (!resMaster.ok) throw new Error('無法取得全球商品母清單 GLOBAL/list/stocklist.csv');
-            const txtMaster = await resMaster.text();
-            
-            const masterMap = {};
-            const linesMaster = txtMaster.split(/\r?\n/);
-            for (let i = 1; i < linesMaster.length; i++) {
-                if (!linesMaster[i].trim()) continue;
-                const cols = linesMaster[i].split(',');
-                if (cols.length >= 2) {
-                    const sym = cols[0].trim();
-                    masterMap[sym] = {
-                        name: cols[1].trim(),
-                        asset_type: cols[2] ? cols[2].trim() : 'commodity'
-                    };
-                }
+    // CSV 解析器
+    function parseCSV(text) {
+        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+        if (lines.length === 0) return [];
+        const headers = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim());
+        const result = [];
+        for (let i = 1; i < lines.length; i++) {
+            const currentLine = lines[i].split(',');
+            if (!currentLine || currentLine.length !== headers.length) continue;
+            const obj = {};
+            for (let j = 0; j < headers.length; j++) {
+                obj[headers[j]] = currentLine[j].replace(/^["']|["']$/g, '').trim();
             }
-
-            // 2. 同步讀取 全球未平倉部位清單
-            const resPos = await fetch('GLOBAL/list/unclosed_positions.csv');
-            if (!resPos.ok) throw new Error('無法取得全球持倉清單 GLOBAL/list/unclosed_positions.csv');
-            const txtPos = await resPos.text();
-
-            const commodityList = [];
-
-            const linesPos = txtPos.split(/\r?\n/);
-            for (let i = 1; i < linesPos.length; i++) {
-                if (!linesPos[i].trim()) continue;
-                const cols = linesPos[i].split(',');
-                if (cols.length >= 6) {
-                    const symbol = cols[0].trim();
-                    const timeframe = cols[1].trim();
-                    const in_date = cols[2].trim();
-                    const entry_close = parseFloat(cols[3]);
-                    const latest_date = cols[4].trim();
-                    const latest_close = parseFloat(cols[5]);
-
-                    // 動態 Merge 清單名稱，查不到則預設顯示 '全球商品'
-                    const meta = masterMap[symbol] || { name: '全球商品', asset_type: 'commodity' };
-                    const item = { symbol, timeframe, in_date, entry_close, latest_date, latest_close, name: meta.name };
-
-                    // 依據類別分流 (目前皆為 commodity)
-                    if (meta.asset_type === 'commodity' || true) {
-                        commodityList.push(item);
-                    }
-                }
-            }
-
-            // 隱藏加載提示，顯示主內容區
-            document.getElementById('loading-div').style.display = 'none';
-            document.getElementById('main-content-area').style.display = 'block';
-
-            let firstActiveTabId = '';
-
-            // 3. 檢查並渲染商品表格
-            if (commodityList.length > 0) {
-                document.getElementById('tab-commodity-li').style.display = 'block';
-                document.getElementById('commodity-count').innerText = `${commodityList.length} 檔`;
-                renderTableRows('commodity-tbody', commodityList);
-                if (!firstActiveTabId) firstActiveTabId = 'commodity-tab';
-            }
-
-            // 自動設定第一個有資料的 Tab 為選取狀態
-            if (firstActiveTabId) {
-                $('.nav-tabs-custom .nav-link').removeClass('active');
-                $('.tab-content .tab-pane').removeClass('show active');
-                
-                const $targetTab = $('#' + firstActiveTabId);
-                $targetTab.addClass('active');
-                $($targetTab.data('bs-target')).addClass('show active');
-            }
-
-            // 4. 初始化與更新排序機制
-            initAndTriggerTableSorter();
-
-        } catch (err) {
-            document.getElementById('loading-div').innerHTML = `<span style="color: red; font-weight: bold;">⚠️ 載入錯誤: ${err.message}</span>`;
-            console.error(err);
+            result.push(obj);
         }
+        return result;
+    }
+    
+    // 簡易防XSS輔助
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
     }
 
-    // 核心渲染 HTML 函數：精準套用代號/名稱水平並排與加大加粗修飾
+    // 全域存放各類別資料
+    let commodityData = [];
+    let fxData = [];
+
+    // 渲染單一表格 (與 taiwan.html 風格一致)
     function renderTableRows(tbodyId, dataList) {
         const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
         tbody.innerHTML = '';
+        
+        if (dataList.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 8;
+            td.textContent = '📭 此類別目前尚無持倉部位';
+            td.style.textAlign = 'center';
+            td.style.padding = '40px';
+            td.style.color = '#94a3b8';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
         dataList.forEach(item => {
             const tr = document.createElement('tr');
             const pnl = item.latest_close - item.entry_close;
@@ -363,32 +425,45 @@
             }
 
             const unclosedDays = calculateDaysBetween(item.in_date, item.latest_date);
-
-            // 精準整合套用：水平並排、間距8px、16px字體與粗體深色修飾
+            const entryDisplay = `$${item.entry_close.toFixed(2)}`;
+            const latestDisplay = `$${item.latest_close.toFixed(2)}`;
+            const pnlDisplay = isNaN(pnl) ? '--' : `${pnlSign}${pnl.toFixed(2)}`;
+            
             tr.innerHTML = `
                 <td>
-                    <a href="global_chart.html?symbol=${item.symbol}" class="symbol-link" title="點擊查看 ${item.symbol} ${item.name} 的完整 K 線回測行情" style="flex-direction: row; align-items: center; gap: 8px;">
-                        <span class="symbol-text" style="font-size: 16px;">${item.symbol}</span>
-                        <span class="symbol-name-text" style="font-size: 16px; font-weight: 700; color: #2c3e50; margin-top: 0;">${item.name}</span>
+                    <a href="global_chart.html?symbol=${encodeURIComponent(item.symbol)}" class="symbol-link" title="點擊查看 ${item.symbol} ${item.name} 的完整 K 線行情">
+                        <span class="symbol-text">${escapeHtml(item.symbol)}</span>
+                        <span class="symbol-name-text">${escapeHtml(item.name)}</span>
                     </a>
                 </td>
-                <td><span class="timeframe-badge">${item.timeframe}</span></td>
-                <td style="font-weight: 600; color: #2c3e50;">${item.in_date}</td>
-                <td>$${item.entry_close.toFixed(2)}</td>
-                <td style="color: var(--text-muted);">${item.latest_date}</td>
-                <td style="font-weight: 600;">$${item.latest_close.toFixed(2)}</td>
-                <td><span class="${pnlClass}">${pnlSign}${isNaN(pnl) ? '--' : pnl.toFixed(2)}</span></td>
+                <td><span class="timeframe-badge">${escapeHtml(item.timeframe)}</span></td>
+                <td style="font-weight: 600; color: #2c3e50;">${escapeHtml(item.in_date)}</td>
+                <td>${escapeHtml(entryDisplay)}</td>
+                <td style="color: var(--text-muted);">${escapeHtml(item.latest_date)}</td>
+                <td style="font-weight: 600;">${escapeHtml(latestDisplay)}</td>
+                <td><span class="${pnlClass}">${escapeHtml(pnlDisplay)}</span></td>
                 <td style="font-weight: 600; color: #475569;">${unclosedDays} 天</td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    // 表格自動動態排序
-    function initAndTriggerTableSorter() {
+    // 更新分頁標籤上的數量徽章
+    function updateTabBadges() {
+        const commodityBadge = document.getElementById('commodity-tab-badge');
+        const fxBadge = document.getElementById('fx-tab-badge');
+        if (commodityBadge) commodityBadge.innerText = commodityData.length;
+        if (fxBadge) fxBadge.innerText = fxData.length;
+        
+        document.getElementById('commodity-count').innerText = `${commodityData.length} 檔持倉`;
+        document.getElementById('fx-count').innerText = `${fxData.length} 檔持倉`;
+    }
+
+    // 初始化所有表格排序器
+    function initAllTableSorters() {
         const sorterConfig = {
             theme: 'bootstrap_4',
-            sortList: [[2, 1]], // 預設依第三欄 (持倉起日) 進行降序排序
+            sortList: [[2, 1]],  // 預設以持倉起日降序
             headers: { 
                 0: { sorter: 'text' }, 
                 1: { sorter: 'text' }, 
@@ -400,21 +475,193 @@
                 7: { sorter: 'digit' }
             }
         };
-
-        ['#commodity-table'].forEach(tableId => {
-            const $table = $(tableId);
-            if ($table.length && $table.find('tbody tr').length > 0) {
+        
+        const tables = ['#commodity-table', '#fx-table'];
+        tables.forEach(selector => {
+            const $table = $(selector);
+            if ($table.length && $table.find('tbody tr').length > 0 && $table.find('tbody tr td[colspan]').length === 0) {
                 if (!$table.data('tablesorter')) {
                     $table.tablesorter(sorterConfig);
                 } else {
                     $table.trigger('update');
+                    $table.trigger('applyWidgets');
                 }
             }
         });
     }
 
+    // 監聽分頁切換事件
+    function bindTabResizeHandler() {
+        const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabEls.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function (event) {
+                const targetId = event.target.getAttribute('data-bs-target');
+                let tableSelector = '';
+                if (targetId === '#commodity-pane') tableSelector = '#commodity-table';
+                else if (targetId === '#fx-pane') tableSelector = '#fx-table';
+                
+                if (tableSelector) {
+                    const $table = $(tableSelector);
+                    if ($table.data('tablesorter')) {
+                        $table.trigger('applyWidgets');
+                    }
+                }
+            });
+        });
+    }
+
+    // 主加載函數
+    async function loadPositions() {
+        try {
+            // 1. 讀取全球商品基本清單 (stocklist.csv)
+            const resMaster = await fetch('GLOBAL/list/stocklist.csv');
+            if (!resMaster.ok) throw new Error('無法取得全球商品母清單 GLOBAL/list/stocklist.csv');
+            const txtMaster = await resMaster.text();
+            
+            const masterMap = {};
+            const linesMaster = txtMaster.split(/\r?\n/);
+            for (let i = 1; i < linesMaster.length; i++) {
+                if (!linesMaster[i].trim()) continue;
+                const cols = linesMaster[i].split(',');
+                if (cols.length >= 3) {
+                    const sym = cols[0].trim();
+                    masterMap[sym] = {
+                        name: cols[1].trim(),
+                        asset_type: cols[2] ? cols[2].trim() : 'commodity'
+                    };
+                } else if (cols.length >= 2) {
+                    // 兼容只有兩欄的情況
+                    const sym = cols[0].trim();
+                    masterMap[sym] = {
+                        name: cols[1].trim(),
+                        asset_type: 'commodity'
+                    };
+                }
+            }
+
+            // 2. 讀取全球未平倉部位清單
+            const resPos = await fetch('GLOBAL/list/unclosed_positions.csv');
+            if (!resPos.ok) throw new Error('無法取得全球持倉清單 GLOBAL/list/unclosed_positions.csv');
+            const txtPos = await resPos.text();
+
+            // 清空各類別暫存陣列
+            const commodityTemp = [];
+            const fxTemp = [];
+
+            const linesPos = txtPos.split(/\r?\n/);
+            for (let i = 1; i < linesPos.length; i++) {
+                if (!linesPos[i].trim()) continue;
+                const cols = linesPos[i].split(',');
+                if (cols.length >= 6) {
+                    const symbol = cols[0].trim();
+                    const timeframe = cols[1].trim();
+                    const in_date = cols[2].trim();
+                    const entry_close = parseFloat(cols[3]);
+                    const latest_date = cols[4].trim();
+                    const latest_close = parseFloat(cols[5]);
+
+                    // 從母清單獲取名稱與資產類別
+                    const meta = masterMap[symbol] || { name: symbol, asset_type: 'commodity' };
+                    const item = { 
+                        symbol, 
+                        timeframe, 
+                        in_date, 
+                        entry_close, 
+                        latest_date, 
+                        latest_close, 
+                        name: meta.name,
+                        asset_type: meta.asset_type
+                    };
+
+                    // 依據 asset_type 分類
+                    if (meta.asset_type === 'FX') {
+                        fxTemp.push(item);
+                    } else {
+                        // commodity 或其他均歸類為貴金屬與商品
+                        commodityTemp.push(item);
+                    }
+                }
+            }
+
+            // 依照持倉起日由近到遠排序
+            const sortByDateDesc = (a, b) => new Date(b.in_date) - new Date(a.in_date);
+            commodityTemp.sort(sortByDateDesc);
+            fxTemp.sort(sortByDateDesc);
+
+            commodityData = commodityTemp;
+            fxData = fxTemp;
+
+            // 隱藏加載提示，顯示分頁容器
+            document.getElementById('loading-div').style.display = 'none';
+            const tabsContainer = document.getElementById('tabs-container');
+            if (tabsContainer) tabsContainer.style.display = 'block';
+
+            // 顯示有資料的分頁標籤
+            const commodityLi = document.getElementById('tab-commodity-li');
+            const fxLi = document.getElementById('tab-fx-li');
+            
+            if (commodityData.length > 0 && commodityLi) commodityLi.style.display = 'block';
+            if (fxData.length > 0 && fxLi) fxLi.style.display = 'block';
+            
+            // 如果只有一個類別有資料，自動隱藏另一個標籤（保持介面整潔）
+            // 但為了讓使用者知道有外匯功能，即使資料為0也顯示（顯示0檔）
+            // 根據需求：只要有該分類就顯示標籤，若無資料則顯示0檔
+            if (commodityLi && commodityLi.style.display !== 'block') {
+                // 即使商品類別無資料，也顯示標籤（讓使用者知道有此功能）
+                commodityLi.style.display = 'block';
+            }
+            if (fxLi && fxLi.style.display !== 'block') {
+                fxLi.style.display = 'block';
+            }
+
+            // 渲染表格內容
+            renderTableRows('commodity-tbody', commodityData);
+            renderTableRows('fx-tbody', fxData);
+
+            // 更新數量徽章
+            updateTabBadges();
+
+            // 設定預設啟用的分頁（優先選擇有資料的分頁）
+            const commodityTab = document.getElementById('commodity-tab');
+            const fxTab = document.getElementById('fx-tab');
+            const commodityPane = document.getElementById('commodity-pane');
+            const fxPane = document.getElementById('fx-pane');
+            
+            // 移除所有 active 狀態
+            document.querySelectorAll('.nav-tabs .nav-link').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active');
+            });
+            
+            // 優先啟用有資料的分頁
+            if (commodityData.length > 0 && commodityTab && commodityPane) {
+                commodityTab.classList.add('active');
+                commodityPane.classList.add('show', 'active');
+            } else if (fxData.length > 0 && fxTab && fxPane) {
+                fxTab.classList.add('active');
+                fxPane.classList.add('show', 'active');
+            } else if (commodityTab && commodityPane) {
+                // 都沒有資料時預設啟用商品分頁
+                commodityTab.classList.add('active');
+                commodityPane.classList.add('show', 'active');
+            }
+
+            // 初始化所有表格的 tablesorter 排序功能
+            initAllTableSorters();
+
+        } catch (err) {
+            document.getElementById('loading-div').innerHTML = `<span style="color: red; font-weight: bold;">⚠️ 載入錯誤: ${err.message}</span>`;
+            console.error(err);
+        }
+    }
+
+    // 確保資料載入完成後執行完整渲染及分頁監聽
     $(document).ready(function() {
-        loadPositions();
+        loadPositions().then(() => {
+            bindTabResizeHandler();
+        });
     });
 </script>
 

@@ -4,43 +4,167 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>策略持倉管理看板</title>
-	<link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/" />
+    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
-        :root { --sidebar-width: 260px; --header-height: 60px; }
-        body { background-color: #f8f9fa; overflow: hidden; }
-        #sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; left: 0; top: 0; background: #ffffff; border-right: 1px solid #e9ecef; z-index: 1000; transition: all 0.3s; }
-        #sidebar.active { margin-left: calc(-1 * var(--sidebar-width)); }
-        #main-content { margin-left: var(--sidebar-width); height: 100vh; display: flex; flex-direction: column; transition: all 0.3s; }
-        #main-content.active { margin-left: 0; }
-        /* Iframe 填滿剩餘空間 */
-        #content-frame { width: 100%; height: calc(100vh - var(--header-height)); border: none; }
-        .nav-link { color: #4a5568; font-weight: 500; cursor: pointer; }
-        .nav-link:hover, .nav-link.active { color: #0d6efd; background: #eef2ff; }
+        :root { 
+            --sidebar-width: 260px; 
+            --header-height: 60px; 
+            --primary-dark: #1e293b;
+            --hover-bg: #f1f5f9;
+        }
+        body { background-color: #f8f9fa; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        /* 側邊欄基礎樣式 */
+        #sidebar { 
+            width: var(--sidebar-width); 
+            height: 100vh; 
+            position: fixed; 
+            left: 0; 
+            top: 0; 
+            background: #ffffff; 
+            border-right: 1px solid #e9ecef; 
+            z-index: 1000; 
+            transition: all 0.3s; 
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 側邊欄 RWD 機制 */
         @media (max-width: 992px) {
             #sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
             #sidebar.show { margin-left: 0; }
-            #main-content { margin-left: 0; }
+            #main-content { margin-left: 0 !important; width: 100% !important; }
         }
+        
+        #sidebar.active { margin-left: calc(-1 * var(--sidebar-width)); }
+        #main-content { margin-left: var(--sidebar-width); height: 100vh; display: flex; flex-direction: column; transition: all 0.3s; }
+        #main-content.active { margin-left: 0; }
+        
+        .sidebar-brand {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid #e9ecef;
+            background-color: #fff;
+        }
+
+        /* 兩階層選單美化 */
+        .menu-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 0;
+        }
+        
+        /* 第一階選單按鈕 */
+        .nav-first-level {
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            color: var(--primary-dark);
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+        }
+        .nav-first-level:hover {
+            background-color: var(--hover-bg);
+        }
+        .nav-first-level .menu-title {
+            display: flex;
+            align-items: center;
+        }
+        .nav-first-level .arrow-icon {
+            transition: transform 0.2s;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .nav-first-level[aria-expanded="true"] .arrow-icon {
+            transform: rotate(180deg);
+            color: #2563eb;
+        }
+
+        /* 第二階選單項目 */
+        .second-level-container {
+            background-color: #f8fafc;
+            padding: 5px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .nav-second-level {
+            display: flex;
+            align-items: center;
+            padding: 9px 20px 9px 45px;
+            color: #475569;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .nav-second-level:hover {
+            color: #1e293b;
+            background-color: #e2e8f0;
+        }
+        .nav-second-level.active {
+            color: #2563eb;
+            background-color: #dbeafe;
+            font-weight: 600;
+            border-right: 4px solid #2563eb;
+        }
+
+        #content-frame { width: 100%; flex: 1; border: none; background: #f4f6f9; }
     </style>
 </head>
 <body>
 
-<nav id="sidebar" class="d-flex flex-column p-3">
-    <div class="h3 text-primary mb-4 px-2">🚀 策略看板</div>
-    <ul class="nav nav-pills flex-column mb-auto">
-        <li class="nav-item">
-            <a class="nav-link active" onclick="loadPage('taiwan.html', this)">
-                <i class="ti ti-chart-line me-2"></i>台股策略持倉
-            </a>
-        </li>
-        <li>
-            <a class="nav-link" onclick="loadPage('global.html', this)">
-                <i class="ti ti-world me-2"></i>全球商品策略
-            </a>
-        </li>
-    </ul>
+<nav id="sidebar">
+    <div class="sidebar-brand">
+        <h5 class="m-0 fw-bold text-dark d-flex align-items-center">
+            <i class="ti ti-trending-up text-danger me-2 text-primary"></i>投資策略管理系統
+        </h5>
+    </div>
+    
+    <div class="menu-container">
+        <div class="menu-group">
+            <button class="nav-first-level" type="button" data-bs-toggle="collapse" data-bs-target="#twStrategyMenu" aria-expanded="true">
+                <span class="menu-title"><i class="ti ti-chart-line me-2 text-secondary"></i>台股策略</span>
+                <i class="ti ti-chevron-down arrow-icon"></i>
+            </button>
+            <div class="collapse show" id="twStrategyMenu">
+                <div class="second-level-container">
+                    <a class="nav-second-level active" onclick="loadPage('taiwan.html', '台股策略 ➔ 目前持倉清單', this)">
+                        <i class="ti ti-circle-dot me-2 fs-6"></i>目前持倉清單
+                    </a>
+                    <a class="nav-second-level" onclick="loadPage('taiwan_closed.html', '台股策略 ➔ 已平倉清單', this)">
+                        <i class="ti ti-circle-check me-2 fs-6"></i>已平倉清單
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-group mt-2">
+            <button class="nav-first-level" type="button" data-bs-toggle="collapse" data-bs-target="#globalStrategyMenu" aria-expanded="false">
+                <span class="menu-title"><i class="ti ti-world me-2 text-secondary"></i>全球商品策略</span>
+                <i class="ti ti-chevron-down arrow-icon"></i>
+            </button>
+            <div class="collapse" id="globalStrategyMenu">
+                <div class="second-level-container">
+                    <a class="nav-second-level" onclick="loadPage('global.html', '全球商品策略 ➔ 目前持倉清單', this)">
+                        <i class="ti ti-circle-dot me-2 fs-6"></i>目前持倉清單
+                    </a>
+                    <a class="nav-second-level" onclick="loadPage('global_closed.html', '全球商品策略 ➔ 已平倉清單', this)">
+                        <i class="ti ti-circle-check me-2 fs-6"></i>已平倉清單
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </nav>
 
 <main id="main-content">
@@ -48,45 +172,47 @@
         <button class="btn btn-outline-secondary btn-sm" onclick="toggleSidebar()">
             <i class="ti ti-menu-2"></i>
         </button>
-        <div class="fw-bold ms-3" id="page-title">交易策略管理系統</div>
+        <div class="fw-bold ms-3 text-secondary" id="page-title">台股策略 ➔ 目前持倉清單</div>
     </header>
 
-    <!-- 顯示目標頁面的容器 -->
     <iframe id="content-frame" src="taiwan.html"></iframe>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function toggleSidebar() {
-		const sidebar = document.getElementById('sidebar');
-		const mainContent = document.getElementById('main-content');
-		
-		// 檢查目前是否處於手機/平板模式 (小於或等於 992px)
-		if (window.innerWidth <= 992) {
-			// 手機版：切換 show 類別來顯示/隱藏側邊欄
-			sidebar.classList.toggle('show');
-		} else {
-			// 電腦版：保留原本切換 active 的縮排邏輯
-			sidebar.classList.toggle('active');
-			mainContent.classList.toggle('active');
-		}
-	}
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        
+        if (window.innerWidth <= 992) {
+            // 手機版：切換 show 類別以滑入/滑出側邊欄
+            sidebar.classList.toggle('show');
+        } else {
+            // 電腦版：縮排主區塊
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('active');
+        }
+    }
 
-    function loadPage(url, element) {
-		// 更新 iframe 內容
-		document.getElementById('content-frame').src = url;
-		
-		// 更新標題
-		document.getElementById('page-title').innerText = element.innerText.trim() + '看板';
-
-		// 更新 Active 樣式
-		document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-		element.classList.add('active');
-
-		// ✨ 加分體驗：在手機版點選功能後，自動把側邊欄收回去
-		if (window.innerWidth <= 992) {
-			document.getElementById('sidebar').classList.remove('show');
-		}
-	}
+    function loadPage(url, displayTitle, element) {
+        // 1. 更新 iframe 的 src 載入目標網頁
+        document.getElementById('content-frame').src = url;
+        
+        // 2. 更新頂部導覽列的標題文字
+        document.getElementById('page-title').innerText = displayTitle;
+        
+        // 3. 移除所有二階選單的 active 高亮狀態，並為當前點擊項目加上高亮
+        document.querySelectorAll('.nav-second-level').forEach(el => {
+            el.classList.remove('active');
+        });
+        element.classList.add('active');
+        
+        // 4. 手機模式自動優化：點擊功能後，自動隱藏左側選單，避免擋住主畫面
+        if (window.innerWidth <= 992) {
+            document.getElementById('sidebar').classList.remove('show');
+        }
+    }
 </script>
+
 </body>
 </html>

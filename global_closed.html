@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📌 台股歷史已平倉策略看板</title>
-    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/taiwan_closed.html" />
+    <title>📌 全球商品歷史已平倉策略看板</title>
+    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/global_closed.html" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/css/theme.bootstrap_4.min.css">
@@ -249,7 +249,7 @@
 
 <div class="container-fluid">
     <header class="dashboard-header">
-        <div class="dashboard-title">📌 台股歷史已平倉策略看板</div>
+        <div class="dashboard-title">📌 全球商品歷史已平倉策略看板</div>
         <div class="header-controls">
             <!-- 資料期間下拉選單 -->
             <div class="date-filter-group">
@@ -275,72 +275,26 @@
     <div id="main-content-area" style="display: none;">
         <ul class="nav nav-tabs nav-tabs-custom" id="closedTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock-pane" type="button" role="tab">
-                    🏛️ 普通股已平倉 <span class="badge-count" id="stock-count">0 筆</span>
+                <button class="nav-link active" id="commodity-tab" data-bs-toggle="tab" data-bs-target="#commodity-pane" type="button" role="tab">
+                    🪙 貴金屬與商品 <span class="badge-count" id="commodity-count">0 筆</span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="etf-tab" data-bs-toggle="tab" data-bs-target="#etf-pane" type="button" role="tab">
-                    📦 ETF 已平倉 <span class="badge-count" id="etf-count">0 筆</span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-pane" type="button" role="tab">
-                    📊 指數已平倉 <span class="badge-count" id="index-count">0 筆</span>
+                <button class="nav-link" id="fx-tab" data-bs-toggle="tab" data-bs-target="#fx-pane" type="button" role="tab">
+                    💱 外匯/匯率 <span class="badge-count" id="fx-count">0 筆</span>
                 </button>
             </li>
         </ul>
 
         <div class="tab-content" id="closedTabsContent">
-            <div class="tab-pane fade show active" id="stock-pane" role="tabpanel" tabindex="0">
+            <!-- 貴金屬與商品分頁 -->
+            <div class="tab-pane fade show active" id="commodity-pane" role="tabpanel" tabindex="0">
                 <div class="card card-custom">
                     <div class="table-responsive">
-                        <table class="table" id="stock-table">
+                        <table class="table" id="commodity-table">
                             <thead>
                                 <tr>
-                                    <th>股票代碼 / 名稱</th>
-                                    <th>進場日期</th>
-                                    <th>進場價格</th>
-                                    <th>出場日期</th>
-                                    <th>出場價格</th>
-                                    <th>每股損益 (元)</th>
-                                    <th>報酬率 (%)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stock-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="etf-pane" role="tabpanel" tabindex="0">
-                <div class="card card-custom">
-                    <div class="table-responsive">
-                        <table class="table" id="etf-table">
-                            <thead>
-                                <tr>
-                                    <th>ETF代碼 / 名稱</th>
-                                    <th>進場日期</th>
-                                    <th>進場價格</th>
-                                    <th>出場日期</th>
-                                    <th>出場價格</th>
-                                    <th>每股損益 (元)</th>
-                                    <th>報酬率 (%)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="etf-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="index-pane" role="tabpanel" tabindex="0">
-                <div class="card card-custom">
-                    <div class="table-responsive">
-                        <table class="table" id="index-table">
-                            <thead>
-                                <tr>
-                                    <th>指數代碼 / 名稱</th>
+                                    <th>商品代碼 / 名稱</th>
                                     <th>進場日期</th>
                                     <th>進場價格</th>
                                     <th>出場日期</th>
@@ -349,7 +303,29 @@
                                     <th>報酬率 (%)</th>
                                 </tr>
                             </thead>
-                            <tbody id="index-tbody"></tbody>
+                            <tbody id="commodity-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 外匯/匯率分頁 -->
+            <div class="tab-pane fade" id="fx-pane" role="tabpanel" tabindex="0">
+                <div class="card card-custom">
+                    <div class="table-responsive">
+                        <table class="table" id="fx-table">
+                            <thead>
+                                <tr>
+                                    <th>貨幣代碼 / 名稱</th>
+                                    <th>進場日期</th>
+                                    <th>進場價格</th>
+                                    <th>出場日期</th>
+                                    <th>出場價格</th>
+                                    <th>每單位損益 (元)</th>
+                                    <th>報酬率 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fx-tbody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -360,13 +336,12 @@
 
 <script>
     // ---------- 全域資料儲存 (原始未篩選) ----------
-    let masterMap = {};           // 存放 symbol -> {name, type}
-    let rawStockData = [];        // 原始普通股資料 (含完整資訊)
-    let rawEtfData = [];          // 原始 ETF 資料
-    let rawIndexData = [];        // 原始指數資料
+    let masterMap = {};           // 存放 symbol -> {name, asset_type}
+    let rawCommodityData = [];    // 原始貴金屬與商品資料 (asset_type !== 'FX')
+    let rawFxData = [];           // 原始外匯資料 (asset_type === 'FX')
     
-    // 目前選中的分頁類型: 'stock', 'etf', 'index'
-    let currentTabType = 'stock';
+    // 目前選中的分頁類型: 'commodity', 'fx'
+    let currentTabType = 'commodity';
     // 目前選中的期間過濾條件
     let currentDateRange = '3months';
     
@@ -425,12 +400,10 @@
     // 根據目前的分頁與資料期間計算累計總損益
     function calculateCurrentTotalProfit() {
         let filteredData = [];
-        if (currentTabType === 'stock') {
-            filteredData = filterDataByDateRange(rawStockData, currentDateRange);
-        } else if (currentTabType === 'etf') {
-            filteredData = filterDataByDateRange(rawEtfData, currentDateRange);
-        } else if (currentTabType === 'index') {
-            filteredData = filterDataByDateRange(rawIndexData, currentDateRange);
+        if (currentTabType === 'commodity') {
+            filteredData = filterDataByDateRange(rawCommodityData, currentDateRange);
+        } else if (currentTabType === 'fx') {
+            filteredData = filterDataByDateRange(rawFxData, currentDateRange);
         }
         
         const totalProfit = filteredData.reduce((sum, item) => sum + (item.profit || 0), 0);
@@ -452,21 +425,16 @@
         let tbodyId = '';
         let tableId = '';
         
-        if (currentTabType === 'stock') {
-            filteredData = filterDataByDateRange(rawStockData, currentDateRange);
-            tbodyId = 'stock-tbody';
-            tableId = '#stock-table';
-            document.getElementById('stock-count').innerText = `${filteredData.length} 筆`;
-        } else if (currentTabType === 'etf') {
-            filteredData = filterDataByDateRange(rawEtfData, currentDateRange);
-            tbodyId = 'etf-tbody';
-            tableId = '#etf-table';
-            document.getElementById('etf-count').innerText = `${filteredData.length} 筆`;
-        } else if (currentTabType === 'index') {
-            filteredData = filterDataByDateRange(rawIndexData, currentDateRange);
-            tbodyId = 'index-tbody';
-            tableId = '#index-table';
-            document.getElementById('index-count').innerText = `${filteredData.length} 筆`;
+        if (currentTabType === 'commodity') {
+            filteredData = filterDataByDateRange(rawCommodityData, currentDateRange);
+            tbodyId = 'commodity-tbody';
+            tableId = '#commodity-table';
+            document.getElementById('commodity-count').innerText = `${filteredData.length} 筆`;
+        } else if (currentTabType === 'fx') {
+            filteredData = filterDataByDateRange(rawFxData, currentDateRange);
+            tbodyId = 'fx-tbody';
+            tableId = '#fx-table';
+            document.getElementById('fx-count').innerText = `${filteredData.length} 筆`;
         }
         
         // 渲染表格內容
@@ -532,7 +500,7 @@
             
             tr.innerHTML = `
                 <td>
-                    <a href="tw_chart.html?symbol=${encodeURIComponent(item.symbol)}" class="symbol-link" title="點擊查看 ${item.symbol} ${item.name} 完整歷程">
+                    <a href="global_chart.html?symbol=${encodeURIComponent(item.symbol)}" class="symbol-link" title="點擊查看 ${item.symbol} ${item.name} 完整歷程">
                         <span class="symbol-text">${escapeHtml(item.symbol)}</span>
                         <span class="symbol-name-text">${escapeHtml(item.name)}</span>
                     </a>
@@ -562,33 +530,38 @@
     // 載入主要資料
     async function loadClosedPositions() {
         try {
-            // 1. 讀取台股基本主檔案
-            const resMaster = await fetch('TW/list/stocklist.csv');
-            if (!resMaster.ok) throw new Error('無法載入母清單 TW/list/stocklist.csv');
+            // 1. 讀取全球商品基本主檔案 (GLOBAL/list/stocklist.csv)
+            const resMaster = await fetch('GLOBAL/list/stocklist.csv');
+            if (!resMaster.ok) throw new Error('無法載入母清單 GLOBAL/list/stocklist.csv');
             const txtMaster = await resMaster.text();
             
             const masterRows = parseCSV(txtMaster);
-            // 欄位預期：symbol, symbol_name, security_type, industry_type
+            // 欄位預期：symbol, symbol_name, asset_type
             for (let i = 1; i < masterRows.length; i++) {
                 const cols = masterRows[i];
                 if (cols.length >= 3) {
                     masterMap[cols[0]] = {
                         name: cols[1],
-                        type: cols[2]  // 股票, ETF, 指數
+                        asset_type: cols[2]  // 例如: commodity, FX 等
+                    };
+                } else if (cols.length >= 2) {
+                    // 兼容只有兩欄的情況，預設為 commodity
+                    masterMap[cols[0]] = {
+                        name: cols[1],
+                        asset_type: 'commodity'
                     };
                 }
             }
             
-            // 2. 讀取已平倉歷史清單
-            const resClosed = await fetch('TW/list/closed_positions.csv');
-            if (!resClosed.ok) throw new Error('無法載入已平倉資料 TW/list/closed_positions.csv');
+            // 2. 讀取已平倉歷史清單 (GLOBAL/list/closed_positions.csv)
+            const resClosed = await fetch('GLOBAL/list/closed_positions.csv');
+            if (!resClosed.ok) throw new Error('無法載入已平倉資料 GLOBAL/list/closed_positions.csv');
             const txtClosed = await resClosed.text();
             const closedRows = parseCSV(txtClosed);
             
             // 清空原始資料
-            rawStockData = [];
-            rawEtfData = [];
-            rawIndexData = [];
+            rawCommodityData = [];
+            rawFxData = [];
             
             // 歷史欄位：symbol, in_date, entry_close, out_date, out_close, profit, profit%
             for (let i = 1; i < closedRows.length; i++) {
@@ -604,8 +577,8 @@
                     let profit_pct_raw = parseFloat(cols[6]);
                     let profit_pct = isNaN(profit_pct_raw) ? '0.00' : (profit_pct_raw * 100).toFixed(2);
                     
-                    // 獲取股票名稱與分類
-                    const meta = masterMap[symbol] || { name: symbol, type: '股票' };
+                    // 獲取商品名稱與資產類別
+                    const meta = masterMap[symbol] || { name: symbol, asset_type: 'commodity' };
                     const item = {
                         symbol, 
                         name: meta.name, 
@@ -614,45 +587,43 @@
                         out_date, 
                         out_close, 
                         profit, 
-                        profit_pct
+                        profit_pct,
+                        asset_type: meta.asset_type
                     };
                     
-                    // 分流派發至原始資料陣列
-                    if (meta.type === 'ETF') {
-                        rawEtfData.push(item);
-                    } else if (meta.type === '指數') {
-                        rawIndexData.push(item);
+                    // 依據 asset_type 分類 (與 global.html 邏輯一致)
+                    if (meta.asset_type === 'FX') {
+                        rawFxData.push(item);
                     } else {
-                        rawStockData.push(item);
+                        // commodity 或其他均歸類為貴金屬與商品
+                        rawCommodityData.push(item);
                     }
                 }
             }
             
             // 依照出場日期由新到舊排序原始資料 (便於預設排序)
             const sortByOutDateDesc = (a, b) => new Date(b.out_date) - new Date(a.out_date);
-            rawStockData.sort(sortByOutDateDesc);
-            rawEtfData.sort(sortByOutDateDesc);
-            rawIndexData.sort(sortByOutDateDesc);
+            rawCommodityData.sort(sortByOutDateDesc);
+            rawFxData.sort(sortByOutDateDesc);
             
             // 隱藏載入提示，顯現主看板
             document.getElementById('loading-div').style.display = 'none';
             document.getElementById('main-content-area').style.display = 'block';
             
-            // 設定預設 active tab = 普通股
-            currentTabType = 'stock';
+            // 設定預設 active tab = 貴金屬與商品
+            currentTabType = 'commodity';
             currentDateRange = '3months';
             
             // 設定下拉選單預設值
             const rangeSelect = document.getElementById('dateRangeSelect');
             if (rangeSelect) rangeSelect.value = '3months';
             
-            // 初次渲染: 普通股 + 近3個月
+            // 初次渲染: 貴金屬與商品 + 近3個月
             renderFilteredTable();
             
-            // 更新個別分頁的總筆數顯示 (尚未篩選前的原始筆數，但之後切換時會動態更新)
-            document.getElementById('stock-count').innerText = `${filterDataByDateRange(rawStockData, currentDateRange).length} 筆`;
-            document.getElementById('etf-count').innerText = `${filterDataByDateRange(rawEtfData, currentDateRange).length} 筆`;
-            document.getElementById('index-count').innerText = `${filterDataByDateRange(rawIndexData, currentDateRange).length} 筆`;
+            // 更新個別分頁的總筆數顯示
+            document.getElementById('commodity-count').innerText = `${filterDataByDateRange(rawCommodityData, currentDateRange).length} 筆`;
+            document.getElementById('fx-count').innerText = `${filterDataByDateRange(rawFxData, currentDateRange).length} 筆`;
             
         } catch (err) {
             document.getElementById('loading-div').innerHTML = `<span style="color: red; font-weight: bold;">⚠️ 載入錯誤: ${err.message}</span>`;
@@ -663,25 +634,18 @@
     // 綁定分頁切換事件與下拉選單變更事件
     function bindEvents() {
         // 分頁切換
-        const stockTabBtn = document.getElementById('stock-tab');
-        const etfTabBtn = document.getElementById('etf-tab');
-        const indexTabBtn = document.getElementById('index-tab');
+        const commodityTabBtn = document.getElementById('commodity-tab');
+        const fxTabBtn = document.getElementById('fx-tab');
         
-        if (stockTabBtn) {
-            stockTabBtn.addEventListener('shown.bs.tab', function() {
-                currentTabType = 'stock';
+        if (commodityTabBtn) {
+            commodityTabBtn.addEventListener('shown.bs.tab', function() {
+                currentTabType = 'commodity';
                 renderFilteredTable();
             });
         }
-        if (etfTabBtn) {
-            etfTabBtn.addEventListener('shown.bs.tab', function() {
-                currentTabType = 'etf';
-                renderFilteredTable();
-            });
-        }
-        if (indexTabBtn) {
-            indexTabBtn.addEventListener('shown.bs.tab', function() {
-                currentTabType = 'index';
+        if (fxTabBtn) {
+            fxTabBtn.addEventListener('shown.bs.tab', function() {
+                currentTabType = 'fx';
                 renderFilteredTable();
             });
         }
@@ -692,24 +656,13 @@
             rangeSelect.addEventListener('change', function(e) {
                 currentDateRange = e.target.value;
                 renderFilteredTable();
-                // 同時更新當前分頁的筆數顯示
-                let filteredLen = 0;
-                if (currentTabType === 'stock') {
-                    filteredLen = filterDataByDateRange(rawStockData, currentDateRange).length;
-                    document.getElementById('stock-count').innerText = `${filteredLen} 筆`;
-                    // 非當前分頁的筆數也同步更新（讓使用者切換時看到正確數字）
-                    document.getElementById('etf-count').innerText = `${filterDataByDateRange(rawEtfData, currentDateRange).length} 筆`;
-                    document.getElementById('index-count').innerText = `${filterDataByDateRange(rawIndexData, currentDateRange).length} 筆`;
-                } else if (currentTabType === 'etf') {
-                    filteredLen = filterDataByDateRange(rawEtfData, currentDateRange).length;
-                    document.getElementById('etf-count').innerText = `${filteredLen} 筆`;
-                    document.getElementById('stock-count').innerText = `${filterDataByDateRange(rawStockData, currentDateRange).length} 筆`;
-                    document.getElementById('index-count').innerText = `${filterDataByDateRange(rawIndexData, currentDateRange).length} 筆`;
-                } else if (currentTabType === 'index') {
-                    filteredLen = filterDataByDateRange(rawIndexData, currentDateRange).length;
-                    document.getElementById('index-count').innerText = `${filteredLen} 筆`;
-                    document.getElementById('stock-count').innerText = `${filterDataByDateRange(rawStockData, currentDateRange).length} 筆`;
-                    document.getElementById('etf-count').innerText = `${filterDataByDateRange(rawEtfData, currentDateRange).length} 筆`;
+                // 同時更新當前分頁的筆數顯示，並同步更新非當前分頁的筆數（讓使用者切換時看到正確數字）
+                if (currentTabType === 'commodity') {
+                    document.getElementById('commodity-count').innerText = `${filterDataByDateRange(rawCommodityData, currentDateRange).length} 筆`;
+                    document.getElementById('fx-count').innerText = `${filterDataByDateRange(rawFxData, currentDateRange).length} 筆`;
+                } else if (currentTabType === 'fx') {
+                    document.getElementById('fx-count').innerText = `${filterDataByDateRange(rawFxData, currentDateRange).length} 筆`;
+                    document.getElementById('commodity-count').innerText = `${filterDataByDateRange(rawCommodityData, currentDateRange).length} 筆`;
                 }
             });
         }
