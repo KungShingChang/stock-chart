@@ -126,7 +126,7 @@
 <nav id="sidebar">
     <div class="sidebar-brand">
         <h5 class="m-0 fw-bold text-dark d-flex align-items-center">
-            <i class="ti ti-trending-up text-danger me-2 text-primary"></i>投資策略管理系統
+            <i class="h3 text-primary mb-4 px-2"></i>🚀 投資策略管理系統
         </h5>
     </div>
     
@@ -147,7 +147,24 @@
                 </div>
             </div>
         </div>
-
+		
+		<div class="menu-group mt-2">
+            <button class="nav-first-level" type="button" data-bs-toggle="collapse" data-bs-target="#globalStrategyMenu" aria-expanded="false">
+                <span class="menu-title"><i class="ti ti-world me-2 text-secondary"></i>港股策略</span>
+                <i class="ti ti-chevron-down arrow-icon"></i>
+            </button>
+            <div class="collapse" id="globalStrategyMenu">
+                <div class="second-level-container">
+                    <a class="nav-second-level" onclick="loadPage('hk.html', '港股策略 ➔ 目前持倉清單', this)">
+                        <i class="ti ti-circle-dot me-2 fs-6"></i>目前持倉清單
+                    </a>
+                    <a class="nav-second-level" onclick="loadPage('hk_closed.html', '港股策略 ➔ 已平倉清單', this)">
+                        <i class="ti ti-circle-check me-2 fs-6"></i>已平倉清單
+                    </a>
+                </div>
+            </div>
+        </div>
+		
         <div class="menu-group mt-2">
             <button class="nav-first-level" type="button" data-bs-toggle="collapse" data-bs-target="#globalStrategyMenu" aria-expanded="false">
                 <span class="menu-title"><i class="ti ti-world me-2 text-secondary"></i>全球商品策略</span>
@@ -163,7 +180,7 @@
                     </a>
                 </div>
             </div>
-        </div>
+        </div>		
     </div>
 </nav>
 

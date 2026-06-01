@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>📊 台股 K 線圖篩選看板</title>
+    <title>📊 港股 K 線圖篩選看板</title>
     <!-- 補上 chart.html 專屬的標準 canonical 連結 -->
     <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/chart.html" />
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
@@ -57,7 +57,7 @@
         <h2>📊 台股歷史 K 線看板</h2>
         <div class="header-tools">
             <!-- 新增：回到持倉首頁按鈕 -->
-            <a href="taiwan.html" class="nav-btn">⬅ 回到持倉首頁</a>
+            <a href="hk.html" class="nav-btn">⬅ 回到持倉首頁</a>
             <div id="dataDate" class="date-badge">數據日期: --</div>
         </div>
     </div>
@@ -131,7 +131,7 @@
 
         async function initSystem() {
             try {
-                const unclosedRes = await fetch('TW/list/unclosed_positions.csv').catch(() => null);
+                const unclosedRes = await fetch('HK/list/unclosed_positions.csv').catch(() => null);
                 if (unclosedRes && unclosedRes.ok) {
                     parseCSV(await unclosedRes.text()).forEach(item => {
                         if (item.symbol) {
@@ -140,8 +140,8 @@
                     });
                 }
 
-                const response = await fetch('TW/list/stocklist.csv');
-                if (!response.ok) throw new Error("無法讀取 TW/list/stocklist.csv");
+                const response = await fetch('HK/list/stocklist.csv');
+                if (!response.ok) throw new Error("無法讀取 HK/list/stocklist.csv");
                 
                 stockMasterList = parseCSV(await response.text());
                 populateFilters();
@@ -204,7 +204,7 @@
             filtered.forEach(stock => {
                 const opt = document.createElement('option');
                 opt.value = stock.symbol;
-                opt.innerText = `${stock.symbol} ${stock.symbol_name || ''}${unclosedPositionsMap.has(stock.symbol) ? " 📌 (持倉中)" : ""}`;
+                opt.innerText = `${stock.symbol} ${stock.stock_name || ''}${unclosedPositionsMap.has(stock.symbol) ? " 📌 (持倉中)" : ""}`;
                 stockSelect.appendChild(opt);
             });
 
@@ -221,8 +221,8 @@
 
             try {
                 const [tradeRes, indRes] = await Promise.all([
-                    fetch(`TW/trade/${symbol}_trade.csv`).catch(() => null),
-                    fetch(`TW/indicator/${symbol}_indicator.csv`).catch(() => null)
+                    fetch(`HK/trade/${symbol}_trade.csv`).catch(() => null),
+                    fetch(`HK/indicator/${symbol}_indicator.csv`).catch(() => null)
                 ]);
 
                 if (!tradeRes || !tradeRes.ok) {

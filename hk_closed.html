@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📌 港股歷史已平倉策略看板</title>
+    <link rel="canonical" href="https://stock-chart.dominic-cks.workers.dev/taiwan_closed.html" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/css/theme.bootstrap_4.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/extras/jquery.tablesorter.widgets.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --stock-red: #ef5350;
+            --stock-green: #26a69a;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 30px 20px;
+        }
+
+        .dashboard-header {
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .dashboard-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        /* 右側控制區塊 */
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .date-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 6px 16px;
+            border-radius: 30px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .date-filter-group label {
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .date-filter-group select {
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .date-filter-group select:hover {
+            border-color: #3b82f6;
+        }
+
+        .summary-pill {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #ffffff;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 6px rgba(15, 23, 42, 0.08);
+            white-space: nowrap;
+        }
+
+        .summary-pill span {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        /* 頂部頁籤美化樣式 */
+        .nav-tabs-custom {
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 0;
+            gap: 5px;
+        }
+        .nav-tabs-custom .nav-link {
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            padding: 10px 20px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            background: #e2e8f0;
+        }
+        .nav-tabs-custom .nav-link:hover {
+            background-color: #cbd5e1;
+            color: var(--text-main);
+        }
+        .nav-tabs-custom .nav-link.active {
+            color: #2563eb;
+            background-color: var(--card-bg);
+            border-color: var(--border-color) var(--border-color) var(--card-bg);
+            border-width: 2px 2px 0 2px;
+            position: relative;
+            margin-bottom: -2px;
+        }
+
+        .card-custom {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 6px rgba(148, 163, 184, 0.05);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .table-responsive {
+            padding: 20px;
+        }
+
+        .table {
+            margin-bottom: 0;
+            vertical-align: middle;
+            width: 100%;
+        }
+
+        .table thead th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-color);
+            padding: 14px 10px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* Tablesorter 排序箭頭 */
+        .table thead th.tablesorter-headerAsc::after {
+            content: " ▲";
+            font-size: 10px;
+            color: var(--stock-red);
+            position: absolute;
+            right: 4px;
+        }
+        .table thead th.tablesorter-headerDesc::after {
+            content: " ▼";
+            font-size: 10px;
+            color: var(--stock-green);
+            position: absolute;
+            right: 4px;
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        .table tbody td {
+            padding: 14px 10px;
+            font-size: 14px;
+        }
+
+        .symbol-link {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .symbol-text {
+            font-weight: 700;
+            color: #2563eb;
+            font-size: 15px;
+        }
+        .symbol-name-text {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .symbol-link:hover .symbol-text {
+            text-decoration: underline;
+        }
+
+        .pnl-positive { color: var(--stock-red); font-weight: 700; }
+        .pnl-negative { color: var(--stock-green); font-weight: 700; }
+        .pnl-neutral { color: #64748b; }
+
+        .badge-count {
+            background-color: #f1f5f9;
+            color: #64748b;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 20px;
+            font-weight: 500;
+            margin-left: 4px;
+        }
+
+        #loading-div {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            font-size: 16px;
+            color: var(--text-muted);
+            gap: 10px;
+        }
+        
+        /* 損益顏色總計區 */
+        .total-profit-positive {
+            color: #ef5350;
+        }
+        .total-profit-negative {
+            color: #26a69a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <header class="dashboard-header">
+        <div class="dashboard-title">📌 港股歷史已平倉策略看板</div>
+        <div class="header-controls">
+            <!-- 資料期間下拉選單 -->
+            <div class="date-filter-group">
+                <label>📅 資料期間</label>
+                <select id="dateRangeSelect">
+                    <option value="3months">近3個月</option>
+                    <option value="6months">近6個月</option>
+                    <option value="1year">近1年</option>
+                    <option value="all">全部</option>
+                </select>
+            </div>
+            <div class="summary-pill">
+                累計總損益: <span id="total-summary">計算中...</span> 元
+            </div>
+        </div>
+    </header>
+
+    <div id="loading-div">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span>正在讀取歷史平倉交易數據與對照清單...</span>
+    </div>
+
+    <div id="main-content-area" style="display: none;">
+        <ul class="nav nav-tabs nav-tabs-custom" id="closedTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock-pane" type="button" role="tab">
+                    🏛️ 普通股已平倉 <span class="badge-count" id="stock-count">0 筆</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="etf-tab" data-bs-toggle="tab" data-bs-target="#etf-pane" type="button" role="tab">
+                    📦 ETF 已平倉 <span class="badge-count" id="etf-count">0 筆</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-pane" type="button" role="tab">
+                    📊 指數已平倉 <span class="badge-count" id="index-count">0 筆</span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="closedTabsContent">
+            <div class="tab-pane fade show active" id="stock-pane" role="tabpanel" tabindex="0">
+                <div class="card card-custom">
+                    <div class="table-responsive">
+                        <table class="table" id="stock-table">
+                            <thead>
+                                <tr>
+                                    <th>股票代碼 / 名稱</th>
+                                    <th>進場日期</th>
+                                    <th>進場價格</th>
+                                    <th>出場日期</th>
+                                    <th>出場價格</th>
+                                    <th>每股損益 (元)</th>
+                                    <th>報酬率 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="etf-pane" role="tabpanel" tabindex="0">
+                <div class="card card-custom">
+                    <div class="table-responsive">
+                        <table class="table" id="etf-table">
+                            <thead>
+                                <tr>
+                                    <th>ETF代碼 / 名稱</th>
+                                    <th>進場日期</th>
+                                    <th>進場價格</th>
+                                    <th>出場日期</th>
+                                    <th>出場價格</th>
+                                    <th>每股損益 (元)</th>
+                                    <th>報酬率 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="etf-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="index-pane" role="tabpanel" tabindex="0">
+                <div class="card card-custom">
+                    <div class="table-responsive">
+                        <table class="table" id="index-table">
+                            <thead>
+                                <tr>
+                                    <th>指數代碼 / 名稱</th>
+                                    <th>進場日期</th>
+                                    <th>進場價格</th>
+                                    <th>出場日期</th>
+                                    <th>出場價格</th>
+                                    <th>每單位損益 (元)</th>
+                                    <th>報酬率 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="index-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- 全域資料儲存 (原始未篩選) ----------
+    let masterMap = {};           // 存放 symbol -> {name, type}
+    let rawStockData = [];        // 原始普通股資料 (含完整資訊)
+    let rawEtfData = [];          // 原始 ETF 資料
+    let rawIndexData = [];        // 原始指數資料
+    
+    // 目前選中的分頁類型: 'stock', 'etf', 'index'
+    let currentTabType = 'stock';
+    // 目前選中的期間過濾條件
+    let currentDateRange = '3months';
+    
+    // 輔助函數: 解析 CSV (支援引號)
+    function parseCSV(text) {
+        const lines = text.split(/\r?\n/);
+        return lines.map(line => {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }).filter(row => row.length > 1 || (row.length === 1 && row[0] !== ''));
+    }
+    
+    // 根據日期範圍過濾資料 (出場日期 out_date)
+    function filterDataByDateRange(data, range) {
+        if (range === 'all') return [...data];
+        
+        const now = new Date();
+        let startDate = new Date();
+        
+        switch(range) {
+            case '3months':
+                startDate.setMonth(now.getMonth() - 3);
+                break;
+            case '6months':
+                startDate.setMonth(now.getMonth() - 6);
+                break;
+            case '1year':
+                startDate.setFullYear(now.getFullYear() - 1);
+                break;
+            default:
+                return [...data];
+        }
+        
+        return data.filter(item => {
+            if (!item.out_date) return false;
+            const outDate = new Date(item.out_date);
+            // 確保出場日期有效且大於等於開始日期
+            return outDate >= startDate && outDate <= now;
+        });
+    }
+    
+    // 根據目前的分頁與資料期間計算累計總損益
+    function calculateCurrentTotalProfit() {
+        let filteredData = [];
+        if (currentTabType === 'stock') {
+            filteredData = filterDataByDateRange(rawStockData, currentDateRange);
+        } else if (currentTabType === 'etf') {
+            filteredData = filterDataByDateRange(rawEtfData, currentDateRange);
+        } else if (currentTabType === 'index') {
+            filteredData = filterDataByDateRange(rawIndexData, currentDateRange);
+        }
+        
+        const totalProfit = filteredData.reduce((sum, item) => sum + (item.profit || 0), 0);
+        return totalProfit;
+    }
+    
+    // 更新頂部總損益顯示 (依據目前選中的 tab + 資料期間)
+    function updateTotalProfitDisplay() {
+        const totalProfit = calculateCurrentTotalProfit();
+        const totalSpan = document.getElementById('total-summary');
+        const sign = totalProfit >= 0 ? '+' : '';
+        totalSpan.innerText = `${sign}${totalProfit.toFixed(2)}`;
+        totalSpan.className = totalProfit > 0 ? 'total-profit-positive' : (totalProfit < 0 ? 'total-profit-negative' : '');
+    }
+    
+    // 渲染指定表格 (根據目前 filter)
+    function renderFilteredTable() {
+        let filteredData = [];
+        let tbodyId = '';
+        let tableId = '';
+        
+        if (currentTabType === 'stock') {
+            filteredData = filterDataByDateRange(rawStockData, currentDateRange);
+            tbodyId = 'stock-tbody';
+            tableId = '#stock-table';
+            document.getElementById('stock-count').innerText = `${filteredData.length} 筆`;
+        } else if (currentTabType === 'etf') {
+            filteredData = filterDataByDateRange(rawEtfData, currentDateRange);
+            tbodyId = 'etf-tbody';
+            tableId = '#etf-table';
+            document.getElementById('etf-count').innerText = `${filteredData.length} 筆`;
+        } else if (currentTabType === 'index') {
+            filteredData = filterDataByDateRange(rawIndexData, currentDateRange);
+            tbodyId = 'index-tbody';
+            tableId = '#index-table';
+            document.getElementById('index-count').innerText = `${filteredData.length} 筆`;
+        }
+        
+        // 渲染表格內容
+        renderTableRows(tbodyId, filteredData);
+        
+        // 更新 tablesorter (保留排序功能)
+        const $table = $(tableId);
+        if ($table.length && filteredData.length > 0) {
+            if (!$table.data('tablesorter')) {
+                const sorterConfig = {
+                    theme: 'bootstrap_4',
+                    sortList: [[3, 1]], // 預設以出場日期降序
+                    headers: { 
+                        0: { sorter: 'text' }, 
+                        1: { sorter: 'date' }, 
+                        2: { sorter: 'digit' }, 
+                        3: { sorter: 'date' }, 
+                        4: { sorter: 'digit' }, 
+                        5: { sorter: 'digit' }, 
+                        6: { sorter: 'digit' }
+                    }
+                };
+                $table.tablesorter(sorterConfig);
+            } else {
+                $table.trigger('update');
+                $table.trigger('applyWidgets');
+            }
+        } else if ($table.length && filteredData.length === 0) {
+            // 若無資料且已初始化，仍然更新避免殘留
+            if ($table.data('tablesorter')) {
+                $table.trigger('update');
+            }
+        }
+        
+        // 更新總損益顯示
+        updateTotalProfitDisplay();
+    }
+    
+    // 共用渲染表格 Rows 函數 (與原始風格一致)
+    function renderTableRows(tbodyId, dataList) {
+        const tbody = document.getElementById(tbodyId);
+        tbody.innerHTML = '';
+        
+        if (dataList.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">📭 此期間內無歷史已平倉交易紀錄</td></tr>`;
+            return;
+        }
+        
+        dataList.forEach(item => {
+            const tr = document.createElement('tr');
+            
+            let pnlClass = 'pnl-neutral';
+            let pnlSign = '';
+            if (item.profit > 0) { 
+                pnlClass = 'pnl-positive'; 
+                pnlSign = '+'; 
+            } else if (item.profit < 0) { 
+                pnlClass = 'pnl-negative'; 
+            }
+            
+            // 報酬率顯示（已轉換為百分比字串，如 "11.84%"）
+            const profitPctDisplay = item.profit_pct !== undefined ? item.profit_pct : '0.00';
+            
+            tr.innerHTML = `
+                <td>
+                    <a href="tw_chart.html?symbol=${encodeURIComponent(item.symbol)}" class="symbol-link" title="點擊查看 ${item.symbol} ${item.name} 完整歷程">
+                        <span class="symbol-text">${escapeHtml(item.symbol)}</span>
+                        <span class="symbol-name-text">${escapeHtml(item.name)}</span>
+                    </a>
+                </td>
+                <td style="color: var(--text-muted);">${escapeHtml(item.in_date)}</td>
+                <td style="font-weight: 600; color: #475569;">$${item.entry_close.toFixed(2)}</td>
+                <td style="color: var(--text-muted); font-weight: 500;">${escapeHtml(item.out_date)}</td>
+                <td style="font-weight: 600; color: #475569;">$${item.out_close.toFixed(2)}</td>
+                <td><span class="${pnlClass}">${pnlSign}${item.profit.toFixed(2)}</span></td>
+                <td><span class="${pnlClass}">${pnlSign}${profitPctDisplay}%</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // 防XSS輔助
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // 載入主要資料
+    async function loadClosedPositions() {
+        try {
+            // 1. 讀取台股基本主檔案
+            const resMaster = await fetch('HK/list/stocklist.csv');
+            if (!resMaster.ok) throw new Error('無法載入母清單 HK/list/stocklist.csv');
+            const txtMaster = await resMaster.text();
+            
+            const masterRows = parseCSV(txtMaster);
+            // 欄位預期：symbol, symbol_name, security_type, industry_type
+            for (let i = 1; i < masterRows.length; i++) {
+                const cols = masterRows[i];
+                if (cols.length >= 3) {
+                    masterMap[cols[0]] = {
+                        name: cols[1],
+                        type: cols[2]  // 股票, ETF, 指數
+                    };
+                }
+            }
+            
+            // 2. 讀取已平倉歷史清單
+            const resClosed = await fetch('HK/list/closed_positions.csv');
+            if (!resClosed.ok) throw new Error('無法載入已平倉資料 HK/list/closed_positions.csv');
+            const txtClosed = await resClosed.text();
+            const closedRows = parseCSV(txtClosed);
+            
+            // 清空原始資料
+            rawStockData = [];
+            rawEtfData = [];
+            rawIndexData = [];
+            
+            // 歷史欄位：symbol, in_date, entry_close, out_date, out_close, profit, profit%
+            for (let i = 1; i < closedRows.length; i++) {
+                const cols = closedRows[i];
+                if (cols.length >= 7) {
+                    const symbol = cols[0];
+                    const in_date = cols[1];
+                    const entry_close = parseFloat(cols[2]) || 0;
+                    const out_date = cols[3];
+                    const out_close = parseFloat(cols[4]) || 0;
+                    const profit = parseFloat(cols[5]) || 0;
+                    // 將小數型態的報酬率（如0.1184）轉換成百分比字串（11.84%）
+                    let profit_pct_raw = parseFloat(cols[6]);
+                    let profit_pct = isNaN(profit_pct_raw) ? '0.00' : (profit_pct_raw * 100).toFixed(2);
+                    
+                    // 獲取股票名稱與分類
+                    const meta = masterMap[symbol] || { name: symbol, type: '股票' };
+                    const item = {
+                        symbol, 
+                        name: meta.name, 
+                        in_date, 
+                        entry_close, 
+                        out_date, 
+                        out_close, 
+                        profit, 
+                        profit_pct
+                    };
+                    
+                    // 分流派發至原始資料陣列
+                    if (meta.type === 'ETF') {
+                        rawEtfData.push(item);
+                    } else if (meta.type === '指數') {
+                        rawIndexData.push(item);
+                    } else {
+                        rawStockData.push(item);
+                    }
+                }
+            }
+            
+            // 依照出場日期由新到舊排序原始資料 (便於預設排序)
+            const sortByOutDateDesc = (a, b) => new Date(b.out_date) - new Date(a.out_date);
+            rawStockData.sort(sortByOutDateDesc);
+            rawEtfData.sort(sortByOutDateDesc);
+            rawIndexData.sort(sortByOutDateDesc);
+            
+            // 隱藏載入提示，顯現主看板
+            document.getElementById('loading-div').style.display = 'none';
+            document.getElementById('main-content-area').style.display = 'block';
+            
+            // 設定預設 active tab = 普通股
+            currentTabType = 'stock';
+            currentDateRange = '3months';
+            
+            // 設定下拉選單預設值
+            const rangeSelect = document.getElementById('dateRangeSelect');
+            if (rangeSelect) rangeSelect.value = '3months';
+            
+            // 初次渲染: 普通股 + 近3個月
+            renderFilteredTable();
+            
+            // 更新個別分頁的總筆數顯示 (尚未篩選前的原始筆數，但之後切換時會動態更新)
+            document.getElementById('stock-count').innerText = `${filterDataByDateRange(rawStockData, currentDateRange).length} 筆`;
+            document.getElementById('etf-count').innerText = `${filterDataByDateRange(rawEtfData, currentDateRange).length} 筆`;
+            document.getElementById('index-count').innerText = `${filterDataByDateRange(rawIndexData, currentDateRange).length} 筆`;
+            
+        } catch (err) {
+            document.getElementById('loading-div').innerHTML = `<span style="color: red; font-weight: bold;">⚠️ 載入錯誤: ${err.message}</span>`;
+            console.error(err);
+        }
+    }
+    
+    // 綁定分頁切換事件與下拉選單變更事件
+    function bindEvents() {
+        // 分頁切換
+        const stockTabBtn = document.getElementById('stock-tab');
+        const etfTabBtn = document.getElementById('etf-tab');
+        const indexTabBtn = document.getElementById('index-tab');
+        
+        if (stockTabBtn) {
+            stockTabBtn.addEventListener('shown.bs.tab', function() {
+                currentTabType = 'stock';
+                renderFilteredTable();
+            });
+        }
+        if (etfTabBtn) {
+            etfTabBtn.addEventListener('shown.bs.tab', function() {
+                currentTabType = 'etf';
+                renderFilteredTable();
+            });
+        }
+        if (indexTabBtn) {
+            indexTabBtn.addEventListener('shown.bs.tab', function() {
+                currentTabType = 'index';
+                renderFilteredTable();
+            });
+        }
+        
+        // 資料期間下拉選單變更
+        const rangeSelect = document.getElementById('dateRangeSelect');
+        if (rangeSelect) {
+            rangeSelect.addEventListener('change', function(e) {
+                currentDateRange = e.target.value;
+                renderFilteredTable();
+                // 同時更新當前分頁的筆數顯示
+                let filteredLen = 0;
+                if (currentTabType === 'stock') {
+                    filteredLen = filterDataByDateRange(rawStockData, currentDateRange).length;
+                    document.getElementById('stock-count').innerText = `${filteredLen} 筆`;
+                    // 非當前分頁的筆數也同步更新（讓使用者切換時看到正確數字）
+                    document.getElementById('etf-count').innerText = `${filterDataByDateRange(rawEtfData, currentDateRange).length} 筆`;
+                    document.getElementById('index-count').innerText = `${filterDataByDateRange(rawIndexData, currentDateRange).length} 筆`;
+                } else if (currentTabType === 'etf') {
+                    filteredLen = filterDataByDateRange(rawEtfData, currentDateRange).length;
+                    document.getElementById('etf-count').innerText = `${filteredLen} 筆`;
+                    document.getElementById('stock-count').innerText = `${filterDataByDateRange(rawStockData, currentDateRange).length} 筆`;
+                    document.getElementById('index-count').innerText = `${filterDataByDateRange(rawIndexData, currentDateRange).length} 筆`;
+                } else if (currentTabType === 'index') {
+                    filteredLen = filterDataByDateRange(rawIndexData, currentDateRange).length;
+                    document.getElementById('index-count').innerText = `${filteredLen} 筆`;
+                    document.getElementById('stock-count').innerText = `${filterDataByDateRange(rawStockData, currentDateRange).length} 筆`;
+                    document.getElementById('etf-count').innerText = `${filterDataByDateRange(rawEtfData, currentDateRange).length} 筆`;
+                }
+            });
+        }
+    }
+    
+    // 初始化
+    $(document).ready(function() {
+        loadClosedPositions().then(() => {
+            bindEvents();
+        });
+    });
+</script>
+
+</body>
+</html>
